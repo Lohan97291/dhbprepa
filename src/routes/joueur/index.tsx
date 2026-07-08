@@ -223,7 +223,7 @@ function JoueurHome() {
           <GlassCard className="divide-y divide-white/5 p-0">
             {validated
               .slice()
-              .sort((a, b) => b.ts - a.ts)
+              .sort((a, b) => (b.ts ?? b.date ?? 0) > (a.ts ?? a.date ?? 0) ? 1 : -1)
               .slice(0, 4)
               .map((s, i) => (
                 <div
