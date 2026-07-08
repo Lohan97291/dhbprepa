@@ -65,6 +65,10 @@ export async function sbSaveJoueur(j: Joueur): Promise<void> {
   );
 }
 
+export async function sbDeleteJoueur(code: string): Promise<void> {
+  await supabase.from("joueurs").delete().eq("code", code.toUpperCase());
+}
+
 export async function sbGetMeta<T = unknown>(
   key: string,
   fallback: T,

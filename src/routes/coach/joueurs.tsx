@@ -1,10 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Search, UserCheck, UserX, X } from "lucide-react";
+import { Check, Search, Trash2, UserCheck, UserX, X } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
-import { sbListJoueurs, sbSaveJoueur, type Joueur } from "@/lib/supabase";
+import {
+  sbDeleteJoueur,
+  sbListJoueurs,
+  sbSaveJoueur,
+  type Joueur,
+} from "@/lib/supabase";
 import {
   formatDate,
   getGroupe,
@@ -183,6 +188,7 @@ function JoueurDrawer({
   const [manSess, setManSess] = useState(0);
   const [manRpe, setManRpe] = useState(5);
   const [saving, setSaving] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const validated = (joueur.seances_validees ?? []).filter((s) => !s.missed);
   const missed = (joueur.seances_validees ?? []).filter((s) => s.missed);
@@ -202,6 +208,14 @@ function JoueurDrawer({
     });
     setSaving(false);
     toast.success("Fiche enregistrée");
+    onSaved();
+  }
+
+  async function del() {
+    setSaving(true);
+    await sbDeleteJoueur(joueur.code);
+    setSaving(false);
+    toast.success(`${joueur.prenom ?? "Joueur"} supprimé`);
     onSaved();
   }
 
@@ -509,6 +523,43 @@ function JoueurDrawer({
               </>
             )}
           </button>
+
+          {!confirmDel ? (
+            <button
+              onClick={() => setConfirmDel(true)}
+              disabled={saving}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/[0.06] py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/[0.12] disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer ce joueur
+            </button>
+          ) : (
+            <GlassCard className="space-y-3 border-red-500/30 p-4">
+              <div className="text-sm font-bold text-red-400">
+                Supprimer {joueur.prenom} {joueur.nom} ?
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Cette action est définitive. Toutes les données du joueur
+                (VMA, séances validées, historique) seront perdues.
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDel(false)}
+                  disabled={saving}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-bold text-foreground"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={del}
+                  disabled={saving}
+                  className="flex-1 rounded-xl bg-red-500 py-2.5 text-xs font-bold text-white transition hover:bg-red-600 disabled:opacity-40"
+                >
+                  {saving ? "Suppression…" : "Confirmer"}
+                </button>
+              </div>
+            </GlassCard>
+          )}
         </div>
       </motion.div>
     </>
