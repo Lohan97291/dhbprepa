@@ -1,7 +1,6 @@
 import { PwaInstallBanner } from "@/components/draveil/PwaInstallBanner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LogOut, Pencil, Smartphone, User } from "lucide-react";
-
 import { GlassCard } from "@/components/draveil/glass-card";
 import { session, useSession } from "@/lib/draveil/session";
 import { JOURS_LONG } from "@/lib/draveil/core";
@@ -15,6 +14,7 @@ function ProfilPage() {
   const navigate = useNavigate();
   const { joueur } = useSession();
   const { canInstall, install } = usePwaInstall();
+
   if (!joueur) return null;
 
   function logout() {
@@ -56,10 +56,7 @@ function ProfilPage() {
         <Row label="Code" value={joueur.code} />
         <Row label="Poste" value={joueur.poste ?? "—"} />
         <Row label="VMA" value={joueur.vma ? `${joueur.vma} km/h` : "—"} />
-        <Row
-          label="Jours de séance"
-          value={joursLabels || "—"}
-        />
+        <Row label="Jours de séance" value={joursLabels || "—"} />
         <Row
           label="Matériel"
           value={joueur.materiel?.length ? joueur.materiel.join(" · ") : "—"}
@@ -84,9 +81,11 @@ function ProfilPage() {
         </button>
       )}
 
+      <PwaInstallBanner />
+
       <button
         onClick={logout}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] py-3.5 text-sm font-medium text-foreground/80 transition hover:border-red-500/30 hover:bg-red-500/[0.06] hover:text-red-400"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] py-3.5 text-sm font-medium text-foreground/80 transition hover:border-red-500/30 hover:bg-red-500/[0.06] hover:text-red-400"
       >
         <LogOut className="h-4 w-4" />
         Se déconnecter
@@ -100,7 +99,6 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between px-5 py-4">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-semibold text-foreground">{value}</span>
-    <PwaInstallBanner />
     </div>
   );
 }
