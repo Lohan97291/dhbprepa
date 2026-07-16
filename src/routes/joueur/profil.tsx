@@ -1,3 +1,4 @@
+import { PwaInstallBanner } from "@/components/draveil/PwaInstallBanner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LogOut, Pencil, Smartphone, User } from "lucide-react";
 
@@ -99,6 +100,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-center justify-between px-5 py-4">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-semibold text-foreground">{value}</span>
+    <PwaInstallBanner />
     </div>
   );
 }
