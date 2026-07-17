@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { motion } from "motion/react";
-import { ArrowRight, Lock, ShieldCheck, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { ArrowRight, Download, Lock, ShieldCheck, Sparkles, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import { DhbMark } from "@/components/draveil/logo";
@@ -13,6 +13,67 @@ import { sbGetJoueur, sbGetMeta } from "@/lib/supabase";
 export const Route = createFileRoute("/")({
   component: LandingPage,
 });
+
+function isInStandaloneMode(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true
+  );
+}
+
+function InstallBanner() {
+  const navigate = useNavigate();
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (isInStandaloneMode()) return;
+    if (localStorage.getItem("dhb_install_dismissed")) return;
+    setShow(true);
+  }, []);
+
+  function dismiss() {
+    localStorage.setItem("dhb_install_dismissed", "1");
+    setShow(false);
+  }
+
+  if (!show) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ type: "spring", damping: 22, stiffness: 260 }}
+        className="mb-4 w-full"
+      >
+        <div
+          className="relative flex items-center gap-3 rounded-2xl border border-[color:var(--draveil)]/40 bg-[color:var(--draveil)]/[0.12] px-4 py-3.5 cursor-pointer"
+          onClick={() => navigate({ to: "/installer" })}
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--draveil)]/20">
+            <Download className="h-5 w-5 text-[color:var(--draveil-glow)]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-foreground">
+              📲 Installer l'application
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Accès rapide depuis ton écran d'accueil
+            </div>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); dismiss(); }}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -50,6 +111,10 @@ function LandingPage() {
       />
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pb-10 pt-14">
+
+        {/* Bannière install en haut */}
+        <InstallBanner />
+
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
