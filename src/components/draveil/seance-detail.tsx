@@ -4,6 +4,7 @@ import { X, Clock, MapPin, CheckCircle2 } from "lucide-react";
 
 import type { Joueur } from "@/lib/supabase";
 import { sbSaveJoueur } from "@/lib/supabase";
+import { sendOneSignalNotif } from "@/lib/onesignal";
 import { successPing, haptic } from "@/lib/draveil/haptic";
 import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
@@ -132,6 +133,12 @@ export function SeanceDetailSheet({
       successPing();
       toast.success("Séance validée 💪", {
         description: `RPE ${rpe}/10 enregistré`,
+      });
+      // Notifier le coach
+      sendOneSignalNotif({
+        title: "✅ Séance validée",
+        body: `${joueur.prenom ?? joueur.code} a fini sa séance (RPE ${rpe}/10)`,
+        target: "coach",
       });
       try {
         if (
