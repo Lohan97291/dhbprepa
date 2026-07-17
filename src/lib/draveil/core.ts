@@ -1533,11 +1533,9 @@ export function getSeanceDuJour(joueur, date=new Date()){
 // ══════════════════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════════════════
-export let sb = null;
-try {
-  const {createClient} = window.supabase;
-  sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(e){ console.warn('Supabase init failed',e); }
+// NOTE: La connexion Supabase se fait désormais dans src/lib/supabase.ts
+// Ce bloc legacy est neutralise pour eviter un warning console.
+export let sb: any = null;
 
 export async function sbGetJoueurs(){
   try{if(!sb)return [];const{data}=await sb.from('joueurs').select('code,data,updated_at');return data?.map(r=>({...r.data,code:r.code}))||[];}
