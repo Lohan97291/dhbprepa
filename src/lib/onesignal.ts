@@ -1,4 +1,5 @@
 import OneSignal from "react-onesignal";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./supabase";
 
 const APP_ID = "9672dfaa-b64a-4b09-9eea-6a70e8915f37";
 
@@ -14,12 +15,10 @@ export async function initOneSignal(userCode: string, userType: "joueur" | "coac
     notifyButton: { enable: false },
   });
 
-  // Identifier l'utilisateur pour cibler les notifs
   await OneSignal.login(userCode);
   await OneSignal.User.addTag("type", userType);
   await OneSignal.User.addTag("code", userCode);
 
-  // Demander la permission
   await OneSignal.Notifications.requestPermission();
 }
 
@@ -34,10 +33,12 @@ export async function sendOneSignalNotif({
   target: "all" | "joueurs" | "coach" | "joueur";
   userCode?: string;
 }) {
-  // Appel à l'Edge Function Supabase qui elle appellera l'API OneSignal REST
-  await fetch("https://ylukjecryawgktojufxt.supabase.co/functions/v1/smart-service", {
+  await fetch(`${SUPABASE_URL}/functions/v1/smart-service`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+    },
     body: JSON.stringify({ title, body, target, user_code: userCode }),
   });
 }

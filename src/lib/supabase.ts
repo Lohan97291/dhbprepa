@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Projet Draveil HB existant — mêmes données que l'ancienne app HTML.
-const SUPABASE_URL = "https://ylukjecryawgktojufxt.supabase.co";
-const SUPABASE_ANON_KEY =
+export const SUPABASE_URL = "https://ylukjecryawgktojufxt.supabase.co";
+export const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdWtqZWNyeWF3Z2t0b2p1Znh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzA0NDksImV4cCI6MjA5Njc0NjQ0OX0.CR2EFIEkW4FC5NZOw9fWRq3j0yTvC_pizidY4OGHdbk";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
