@@ -81,6 +81,19 @@ function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
 
+  // Auto-reconnexion : si un code joueur est déjà enregistré, on redirige direct
+  useEffect(() => {
+    const saved = localStorage.getItem("dhb_joueur_code");
+    if (saved) {
+      sbGetJoueur(saved).then((j) => {
+        if (j) {
+          session.setJoueur(j);
+          navigate({ to: "/joueur" });
+        }
+      });
+    }
+  }, [navigate]);
+
   async function handleLoginJoueur() {
     const c = code.trim().toUpperCase();
     if (!c) {

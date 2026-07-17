@@ -52,6 +52,19 @@ function CoachLayout() {
   const navigate = useNavigate();
   const { coach } = useSession();
 
+  // Restore coach session from localStorage
+  useEffect(() => {
+    if (coach) return;
+    const saved = localStorage.getItem("dhb_coach");
+    if (saved) {
+      try {
+        session.setCoach(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem("dhb_coach");
+      }
+    }
+  }, [coach]);
+
   // Init OneSignal push notifications
   useEffect(() => {
     if (!coach?.id) return;
