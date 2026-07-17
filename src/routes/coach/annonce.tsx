@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { GlassCard } from "@/components/draveil/glass-card";
 import { sbGetMeta, sbSaveMeta } from "@/lib/supabase";
+import { sendPushNotification } from "@/lib/push";
 
 export const Route = createFileRoute("/coach/annonce")({
   component: AnnoncePage,
@@ -25,6 +26,11 @@ function AnnoncePage() {
     setAnnonce(a);
     setText("");
     toast.success("Annonce publiée 📢");
+    await sendPushNotification({
+      title: "📢 Annonce équipe",
+      body: a.text.slice(0, 100),
+      target: "all",
+    });
   }
   async function del() {
     await sbSaveMeta("annonce", null);

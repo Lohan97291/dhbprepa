@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { BarChart3, Calendar, Home, User } from "lucide-react";
 
 import { session, useSession } from "@/lib/draveil/session";
+import { subscribeToPush } from "@/lib/push";
 import { sbGetJoueur } from "@/lib/supabase";
 import { WelcomeSlides } from "@/components/draveil/welcome-slides";
 import { PageTransition } from "@/components/draveil/page-transition";
@@ -50,6 +51,17 @@ function JoueurLayout() {
       else navigate({ to: "/" });
     });
   }, [joueur, navigate]);
+
+  // Subscribe to push notifications
+  useEffect(() => {
+    if (!joueur?.code) return;
+    const done = localStorage.getItem("dhb_push_" + joueur.code);
+    if (!done) {
+      subscribeToPush(joueur.code, "joueur").then((ok) => {
+        if (ok) localStorage.setItem("dhb_push_" + joueur.code, "1");
+      });
+    }
+  }, [joueur?.code]);
 
   // Welcome check (once per joueur)
   useEffect(() => {

@@ -5,13 +5,14 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { motion } from "motion/react";
+import { useEffect, motion } from "motion/react";
 import { KeyRound, Lock, LogOut, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { DhbMark } from "@/components/draveil/logo";
 import { session, useSession } from "@/lib/draveil/session";
+import { subscribeToPush } from "@/lib/push";
 import { PageTransition } from "@/components/draveil/page-transition";
 import { COACHES } from "@/lib/draveil/coaches";
 import { sbGetMeta, sbSaveMeta } from "@/lib/supabase";
@@ -50,6 +51,17 @@ const TABS: CTab[] = [
 function CoachLayout() {
   const navigate = useNavigate();
   const { coach } = useSession();
+
+  // Subscribe to push notifications as coach
+  useEffect(() => {
+    if (!coach?.id) return;
+    const done = localStorage.getItem("dhb_push_coach_" + coach.id);
+    if (!done) {
+      subscribeToPush(coach.id, "coach").then((ok) => {
+        if (ok) localStorage.setItem("dhb_push_coach_" + coach.id, "1");
+      });
+    }
+  }, [coach?.id]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [pwdOpen, setPwdOpen] = useState(false);
 

@@ -10,6 +10,7 @@ import {
   sbSaveJoueur,
   type Joueur,
 } from "@/lib/supabase";
+import { sendPushNotification } from "@/lib/push";
 import {
   formatDate,
   getGroupe,
