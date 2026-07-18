@@ -1037,457 +1037,628 @@ export function getPPP_niveauxIndiv(weekIdx){
   return getPPP_niveaux(niv===1?0:niv===2?2:0);
 }
 
-export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
-  const vma=joueur.vma||13;
-  const adapt=getProfilAdapt(joueur);
-  const vFooting=Math.round(vma*0.65*10)/10;
-  const vSoutenu=Math.round(vma*0.78*10)/10;
-  const vRecup  =Math.round(vma*0.55*10)/10;
+// ══════════════════════════════════════════════════════════════════════════════
+// NOUVEAU PROGRAMME PHASE 2 — 5 semaines — Draveil HB D2
+// Lohan Boulard, Directeur Sportif
+//
+// Philosophie :
+//   S1 (Mardi) = Renfo + Cardio intégré — puissance & intensité
+//   S2 (Jeudi) = Cardio dominant + Renfo léger — endurance & volume
+//   S3 (Facultative) = Récupération active
+//
+// Progression :
+//   Sem 1 : reprise sérieuse, corpo réveille
+//   Sem 2 : première vraie claque — sortir épuisé
+//   Sem 3-4 : intensification franche — fractionné court, renfo lourd
+//   Sem 5 : affûtage — intensité haute, volume réduit
+//
+// Individualisation :
+//   VMA  → allures personnalisées (fond/seuil/puissance/récup)
+//   Groupe A/B/C → % VMA adaptés
+//   Profil adapt → âge/IMC → modifie impact, récup, charge
+//   Ressenti → ajuste volume et intensité
+//   Matériel → descriptions adaptées (aucun/élastiques/salle)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Helpers de mise en forme ─────────────────────────────────────────────────
+function v(vma, pct){ return Math.round(vma*pct*10)/10; }
+function pace(vma, pct){ return kmhToMinKm(v(vma,pct)); }
+
+// ── Blocs communs réutilisables ───────────────────────────────────────────────
+function blocEchauffementCourse(specifique=''){
+  return {
+    titre:'Échauffement', duree:600, icone:'🔥',
+    detail:
+      '<strong>10 min — ne zappe pas cette partie :</strong><br>'+
+      '① <strong>3 min</strong> footing très lent (allure conversation)<br>'+
+      '② <strong>2 min mobilité articulaire :</strong> cercles bras (10×) · rotations hanches (10×/sens) · cercles chevilles (10×/pied)<br>'+
+      '③ <strong>3 min gammes :</strong> montées de genoux 20m · talons-fesses 20m · pas chassés latéraux 20m · foulées bondissantes 20m<br>'+
+      (specifique ? '④ '+specifique : '④ <strong>2 × 30m</strong> accélérations progressives (finir à 80-85%)')
+  };
+}
+
+function blocEchauffementRenfo(){
+  return {
+    titre:'Échauffement dynamique', duree:480, icone:'🔥',
+    detail:
+      '<strong>8 min — activation neuromusculaire :</strong><br>'+
+      '① <strong>3 min</strong> footing léger<br>'+
+      '② <strong>Mobilité :</strong> cercles bras (10×) · rotations hanches (10×/sens) · squats profonds lents 10×<br>'+
+      '③ <strong>Activation :</strong> jumping jacks 30s · fentes alternées 10× · pompes 5× lentes<br>'+
+      '④ <strong>2 × 20m</strong> montées de genoux rapides'
+  };
+}
+
+function blocRetourCalme(long=false){
+  if(long) return {
+    titre:'Retour au calme', duree:480, icone:'🧘',
+    detail:
+      '<strong>8 min — prends ton temps :</strong><br>'+
+      '① <strong>2 min</strong> marche tranquille<br>'+
+      '② Ischios : assis jambes tendues, penche le buste · <strong>45s/jambe</strong><br>'+
+      '③ Quadriceps : debout, talon aux fesses · <strong>45s/jambe</strong><br>'+
+      '④ Mollets : pied contre mur, jambe tendue · <strong>30s/jambe</strong><br>'+
+      '⑤ Fessiers : allongé, genou sur la poitrine · <strong>30s/jambe</strong><br>'+
+      '⑥ Épaules : bras croisé devant · <strong>30s/côté</strong><br>'+
+      '⑦ Dos : chat-vache 10× · torsion assise 30s/côté',
+    note:'Corps fatigué → étirements prolongés = meilleure récupération'
+  };
+  return {
+    titre:'Retour au calme', duree:300, icone:'🧘',
+    detail:
+      '<strong>5 min :</strong><br>'+
+      '① <strong>2 min</strong> marche tranquille<br>'+
+      '② Ischios : assis jambes tendues · <strong>30s/jambe</strong><br>'+
+      '③ Quadriceps : debout, talon aux fesses · <strong>30s/jambe</strong><br>'+
+      '④ Mollets : pied contre mur · <strong>20s/jambe</strong><br>'+
+      '⑤ Épaules : bras croisé devant · <strong>20s/côté</strong>'
+  };
+}
+
+function blocPPP(weekIdx){
   const ppp=getPPP_niveauxIndiv(weekIdx);
-  const si=adapt.sansImpact;
-  const verbe=si?'marche rapide ou footing lent':'footing';
-  const unite=si
-    ? `à allure très tranquille — <strong>marche rapide si la course est inconfortable</strong>`
-    : `à <strong>${vFooting} km/h</strong> (${kmhToMinKm(vFooting)}/km)`;
-  const noteImpact=si
-    ? '🔵 Articulations à ménager : privilégie la marche rapide ou le footing très lent. Vélo / natation / elliptique si tu en as accès — sinon la marche suffit.'
-    : null;
+  return {
+    titre:`🛡️ Prévention blessures — Niveau ${ppp.niveau}/3`,
+    icone:'🛡️', isPPP:true, pppExos:ppp.exos,
+    note:`Semaine ${weekIdx+1} — ne zappe pas, c'est ce qui évite les blessures`
+  };
+}
 
-  // ── Échauffement commun ──────────────────────────────────────────────────
-  const blocEchauf={titre:'Échauffement', duree:600, icone:'🔥',
+// ════════════════════════════════════════════════════════════════════════════
+// SÉANCE 1 (MARDI) — Renfo + Cardio intégré
+// Puissance & intensité — les mecs sortent les jambes chargées
+// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// PROGRAMME PHASE 2 v2 — 5 semaines — Draveil HB D2
+// Séances UNIQUES chaque semaine — exercices qui varient
+// Vidéos YouTube pour les exercices techniques
+// Appuis handball adaptés domicile/vacances
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── Vidéos YouTube (courtes, techniques, en français quand possible) ──────────
+const VIDEOS = {
+  nordic_curl:      'https://www.youtube.com/watch?v=EC8eS5Pbns4',
+  hip_thrust:       'https://www.youtube.com/watch?v=MI3sJbT_F_Y',
+  squat_bulgare:    'https://www.youtube.com/watch?v=eCJxHKDXBqk',
+  carioca:          'https://www.youtube.com/watch?v=R3__Q_SulyM',
+  pompes_explosives:'https://www.youtube.com/watch?v=q81G2BauO18',
+  burpees:          'https://www.youtube.com/watch?v=TU8QYVW0gDU',
+  fente_sautee:     'https://www.youtube.com/watch?v=Bf5JQ5jgRoo',
+  squat_saute:      'https://www.youtube.com/watch?v=A-cFYWvaHr0',
+  superman:         'https://www.youtube.com/watch?v=cc6UVRS7PW4',
+  shuffle_lateral:  'https://www.youtube.com/watch?v=TS3tHxUzpTk',
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function vit(vma, pct){ return Math.round(vma*pct*10)/10; }
+function allure(vma, pct){ return kmhToMinKm(vit(vma,pct)); }
+function fv(base, ressenti){ return ressenti==='fatigue'?Math.round(base*0.75):ressenti==='enforme'?Math.round(base*1.15):base; }
+
+// ── Bloc échauffement course ──────────────────────────────────────────────────
+function echauffCourse(extra=''){
+  return {titre:'Échauffement', duree:600, icone:'🔥',
     detail:'<strong>10 min :</strong><br>'+
-      '① 3 min footing très lent (allure conversation)<br>'+
-      '② 2 min mobilité : cercles de bras (10×) · rotations hanches (10×/sens) · cercles chevilles (10×/pied)<br>'+
-      '③ 2 min gammes : montées de genoux 20m · talons-fesses 20m · pas chassés latéraux 20m<br>'+
-      '④ 3 min : 3 × 30m accélérations progressives (finir à 70-80%)'};
+      '① <strong>3 min</strong> footing très lent<br>'+
+      '② <strong>2 min mobilité :</strong> cercles bras · rotations hanches · cercles chevilles<br>'+
+      '③ <strong>3 min gammes :</strong> montées de genoux 20m · talons-fesses 20m · pas chassés 20m · foulées bondissantes 20m<br>'+
+      (extra||'④ <strong>2×30m</strong> accélérations progressives')};
+}
 
-  // ── Retour au calme commun ───────────────────────────────────────────────
-  const blocCalme={titre:'Retour au calme', duree:300, icone:'🧘',
-    detail:'<strong>5 min :</strong><br>'+
-      '① 2 min marche tranquille pour faire descendre le rythme cardiaque<br>'+
-      '② Ischios : assis jambes tendues, penche le buste en avant · 30s/jambe<br>'+
-      '③ Quadriceps : debout, ramène le talon aux fesses · 30s/jambe<br>'+
-      '④ Mollets : pied contre un mur, jambe tendue · 20s/jambe<br>'+
-      '⑤ Épaules : bras croisé devant la poitrine · 20s/côté'};
+// ── Bloc échauffement renfo ───────────────────────────────────────────────────
+function echauffRenfo(){
+  return {titre:'Échauffement dynamique', duree:480, icone:'🔥',
+    detail:'<strong>8 min :</strong><br>'+
+      '① <strong>3 min</strong> footing léger<br>'+
+      '② Mobilité : cercles bras · rotations hanches · squats profonds lents 10×<br>'+
+      '③ Activation : jumping jacks 30s · fentes 10× · pompes 5× lentes<br>'+
+      '④ <strong>2×20m</strong> montées de genoux rapides'};
+}
 
-  // ── Retour au calme allongé (mode Fatigué) ───────────────────────────────
-  const blocCalmeAllonge={titre:'Retour au calme + étirements', duree:480, icone:'🧘',
-    detail:'<strong>8 min — prends ton temps :</strong><br>'+
+// ── Retour au calme ───────────────────────────────────────────────────────────
+function retourCalme(long=false){
+  if(long) return {titre:'Retour au calme', duree:480, icone:'🧘',
+    detail:'<strong>8 min :</strong><br>'+
       '① 2 min marche tranquille<br>'+
-      '② Ischios : assis jambes tendues · 30s/jambe<br>'+
-      '③ Quadriceps : debout, talon aux fesses · 30s/jambe<br>'+
-      '④ Mollets : pied contre mur · 20s/jambe<br>'+
-      '⑤ Épaules : bras croisé · 20s/côté<br>'+
-      '⑥ Dos : chat-vache au sol 10× · torsion assise 20s/côté',
-    note:'Corps fatigué → étirements prolongés = meilleure récupération'};
+      '② Ischios : assis jambes tendues · <strong>45s/jambe</strong><br>'+
+      '③ Quadriceps : talon aux fesses · <strong>45s/jambe</strong><br>'+
+      '④ Fessiers : genou sur la poitrine · <strong>30s/jambe</strong><br>'+
+      '⑤ Mollets : pied contre mur · <strong>30s/jambe</strong><br>'+
+      '⑥ Adducteurs : papillon assis · <strong>1 min</strong><br>'+
+      '⑦ Dos : chat-vache 10× · torsion assise 30s/côté',
+    note:'Corps fatigué → étirements longs = meilleure récupération'};
+  return {titre:'Retour au calme', duree:300, icone:'🧘',
+    detail:'<strong>5 min :</strong><br>'+
+      '① 2 min marche<br>'+
+      '② Ischios : <strong>30s/jambe</strong><br>'+
+      '③ Quadriceps : <strong>30s/jambe</strong><br>'+
+      '④ Mollets : <strong>20s/jambe</strong><br>'+
+      '⑤ Épaules : bras croisé · <strong>20s/côté</strong>'};
+}
 
-  // ── Bloc PPP ─────────────────────────────────────────────────────────────
-  const blocPPP={titre:`Prévention blessures — Niveau ${ppp.niveau}/3`, detail:'',
-    icone:'🛡️', isPPP:true, pppExos:ppp.exos,
-    note:`Semaine ${weekIdx+1} — maintenu même en cas de fatigue`};
+// ── PPP ───────────────────────────────────────────────────────────────────────
+function ppp(weekIdx){
+  const p=getPPP_niveauxIndiv(weekIdx);
+  return {titre:`🛡️ Prévention blessures — Niveau ${p.niveau}/3`, icone:'🛡️',
+    isPPP:true, pppExos:p.exos,
+    note:`Semaine ${weekIdx+1} — ne zappe pas, c'est ce qui t\\'évite les blessures`};
+}
 
-  // ════════════════════════════════════════════════════════════════════════
-  // 😴 FATIGUÉ — footing léger, PPP maintenu, calme allongé
-  // ════════════════════════════════════════════════════════════════════════
-  if(ressenti==='fatigue'){
-    const duree = weekIdx===0 ? '1×8 min' : '15 min';
-    const detail = weekIdx===0
-      ? `8 minutes de ${verbe} ${unite}.<br>Si tu te sens vraiment à plat, marche rapide pendant les 2 dernières minutes.`
-      : `15 minutes de ${verbe} ${unite}.<br>Allure très légère — tu dois pouvoir tenir une conversation tout du long.`;
-    const cardioFatigue={titre:`${weekIdx===0?'Reprise légère':'Footing léger'} — ${duree}`,
-      detail, icone:'🏃', duree:weekIdx===0?480:900,
-      note:'Corps fatigué = pas d\'intensité aujourd\'hui. L\'essentiel c\'est d\'être là.'};
-    return {
-      titre:'Cardio léger + Prévention',
-      type:'Cardio', typeColor:'var(--red)', typeIcon:'🏃',
-      obligatoire:true, tags:['cardio','ppp'],
-      semaine:weekIdx+1, duree:'35-40 min',
-      ressenti:'fatigue',
-      notePoste:noteImpact,
-      blocs:[blocEchauf, cardioFatigue, blocPPP, blocCalmeAllonge]
-    };
-  }
+// ── Exo helper ────────────────────────────────────────────────────────────────
+function exo(titre, icone, detail, note, videoKey=null, variante=null){
+  return {titre, icone, detail, note, ...(videoKey?{videoUrl:VIDEOS[videoKey]}:{}), ...(variante?{variante}:{})};
+}
 
-  // ════════════════════════════════════════════════════════════════════════
-  // 😐 NORMAL — programme standard
-  // ════════════════════════════════════════════════════════════════════════
-  let cardioBloc;
+// ════════════════════════════════════════════════════════════════════════════════
+// SÉANCE 1 (MARDI) — Renfo + Cardio intégré
+// ════════════════════════════════════════════════════════════════════════════════
+export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
+  const vma   = joueur.vma||13;
+  const adapt  = getProfilAdapt(joueur);
+  const gr    = getGroupe(vma);
+  const si    = adapt.sansImpact;
+  const menager = adapt.profil==='menager';
+  const noteImpact = si?'🔵 Articulations : adapte les sauts en version sans impact (squat lent plutôt que sauté, fentes lentes). Le renfo reste identique.':null;
+
+  // Allures selon groupe
+  const pctS  = gr==='A'?0.85:gr==='B'?0.82:0.78;
+  const pctV  = gr==='A'?0.93:gr==='B'?0.89:0.85;
+  const pctM  = gr==='A'?0.97:gr==='B'?0.93:0.90;
+
+  // ── SEMAINE 1 : Réveil — body weight qualité + endurance ─────────────────
   if(weekIdx===0){
-    cardioBloc={titre:`Reprise cardio — 2 × 8 min`,
-      detail:`<strong>2 fois 8 minutes</strong> de ${verbe} ${unite},<br>avec 3 min de récupération (marche) entre les deux blocs.`,
-      note:si?'🔵 Articulations à ménager : marche rapide si la course est inconfortable. Vélo/natation si disponible.':'On réveille le corps en douceur — tu dois pouvoir parler pendant l\'effort.',
-      duree:8*60, icone:'🏃'};
-  } else if(weekIdx===1){
-    cardioBloc={titre:`Footing continu — 20 min`,
-      detail:`<strong>20 minutes</strong> de ${verbe} en continu ${unite}.`,
-      note:si?'🔵 Marche rapide si besoin — l\'important c\'est de tenir les 20 min.':'Allure régulière, sans forcer. Le but est de tenir la durée.',
-      duree:20*60, icone:'🏃'};
-  } else if(weekIdx===2){
-    cardioBloc={titre:`Footing continu — 25 min + relances`,
-      detail:`<strong>25 min</strong> de ${verbe} ${unite},<br>avec 3 relances un peu plus soutenues de 1 min${si?' (accélère légèrement la marche/footing)':`à <strong>${vSoutenu} km/h</strong>`}.`,
-      note:si?'🔵 Les relances = accélérations légères, pas de sprint — juste monter un peu l\'allure.':'On commence à élever un peu l\'intensité, sans excès.',
-      duree:25*60, icone:'🏃'};
-  } else if(weekIdx===3){
-    cardioBloc={titre:'Intervalles — 6 × (2 min soutenu / 1 min 30 récup)',
-      detail:si
-        ? `<strong>6 répétitions :</strong><br>① 2 min à allure soutenue (marche très rapide ou footing lent)<br>② 1 min 30 de récupération à allure très tranquille<br>③ L\'objectif : sentir un effort réel sur les 2 min, pas à fond`
-        : `<strong>6 fois :</strong> 2 min soutenu à <strong>${vSoutenu} km/h</strong> (${kmhToMinKm(vSoutenu)}/km),<br>puis 1 min 30 de footing lent à <strong>${vRecup} km/h</strong>.`,
-      note:si?'🔵 Si vélo/elliptique disponible : résistance élevée sur les 2 min effort, résistance faible en récup.':'La séance la plus exigeante de la phase. Allure régulière sur chaque bloc.',
-      duree:6*210, icone:'🏃', hasTimer:!si, timerReps:si?undefined:6, timerSpeed:si?undefined:vSoutenu};
-  } else {
-    cardioBloc={titre:`Décharge — 20 min tranquille`,
-      detail:`<strong>20 min</strong> de ${verbe} très tranquille ${si?'':`à <strong>${vFooting} km/h</strong>`}.<br>Dernière semaine avant la reprise collective — on relâche.`,
-      note:si?'🔵 Marche tranquille si tu préfères — l\'objectif c\'est juste de bouger sans se fatiguer.':'Léger ! On arrive frais à la reprise avec l\'équipe.',
-      duree:20*60, icone:'🏃'};
-  }
-
-  if(ressenti==='normal'){
-    return {
-      titre:'Cardio + Prévention',
-      type:'Cardio', typeColor:'var(--red)', typeIcon:'🏃',
-      obligatoire:true, tags:['cardio','ppp'],
-      semaine:weekIdx+1, duree:'45-55 min',
-      ressenti:'normal',
-      notePoste:noteImpact,
-      blocs:[blocEchauf, cardioBloc, blocPPP, blocCalme]
+    const nT = fv(menager?2:3, ressenti);
+    const renfo = {
+      titre:`Circuit Réveil — ${nT} passages · 40s/20s`, icone:'💪',
+      detail:`<strong>${nT} passages · 40s effort · 20s récup · 90s récup entre passages</strong><br>Mets-toi dedans dès la première répétition — c'est une reprise sérieuse.`,
+      sousBlocs:[
+        exo('Squat poids du corps','🦵',
+          '<strong>40s — max de reps :</strong><br>① Pieds largeur épaules, pointes vers l\'extérieur<br>② Descente lente <strong>3s</strong> cuisses parallèles, genoux dans l\'axe<br>③ Remontée explosive en poussant dans les talons<br>④ Dos droit, regard devant',
+          'Genoux dans l\'axe — ne les laisse jamais rentrer vers l\'intérieur'),
+        exo('Pompes','💪',
+          '<strong>40s — max de reps :</strong><br>① Mains légèrement + larges que les épaules<br>② Descente lente <strong>2s</strong>, poitrine près du sol<br>③ Remontée explosive · Sur les genoux si besoin mais amplitude complète<br>④ Corps gainage de la tête aux pieds',
+          'Qualité > quantité — 8 pompes propres > 20 bancales'),
+        exo('Fentes alternées','🦵',
+          '<strong>40s — alterne G/D :</strong><br>① Grand pas en avant, genou avant à 90°, genou arrière près du sol<br>② Descente <strong>2s</strong>, genou avant dans l\'axe du pied<br>③ Remontée en poussant sur le talon avant',
+          'Genou avant ne dépasse pas la pointe du pied'),
+        exo('Gainage ventral','🔷',
+          '<strong>40s :</strong><br>① Appui avant-bras et pointes de pieds, coudes sous les épaules<br>② Corps aligné tête-talons, serre abdos ET fessiers<br>③ Respire normalement — pas en apnée',
+          'Fesses ni trop hautes ni qui s\'affaissent'),
+        exo('Pont fessier bilatéral','🍑',
+          '<strong>40s — max de reps :</strong><br>① Allongé dos, genoux fléchis 90°, pieds à plat<br>② Monte les hanches en serrant fort les fessiers<br>③ Tiens <strong>1s</strong> en haut, descends lentement <strong>3s</strong>',
+          'Serre les fessiers fort en haut — pas le bas du dos'),
+        exo('Burpees','🔥',
+          '<strong>40s — finisseur :</strong><br>① Debout → accroupi → planche → retour → saut bras levés<br>② Rythme régulier, qualité du mouvement<br>③ Variante sans saut si articulations inconfortables',
+          'Rythme constant — évite les sprints suivis d\'arrêts', 'burpees'),
+      ]
     };
+    const nC = fv(2, ressenti);
+    const cardio = {titre:`Cardio soutenu — ${nC}×8 min`, icone:'🏃', duree:480,
+      detail:`<strong>${nC} × 8 minutes</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong><br><strong>3 min récup active</strong> (marche) entre les blocs.<br>Effort soutenu — tu sens l'effort mais tu tiens les 8 min.`,
+      note:`Groupe ${gr} · ${Math.round(pctS*100)}% VMA · Reveil cardio-vasculaire`};
+    return _build(weekIdx,'S1 — Réveil musculaire + Endurance','50-55 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // 🔥 EN FORME — standard + bloc vitesse/explosivité handball
-  // ════════════════════════════════════════════════════════════════════════
-  const vitesseBlocs = [
-    // S1 — Démarrages explosifs
-    {titre:'⚡ Démarrages explosifs — 6 × 10m', icone:'⚡',
-      detail:'<strong>6 répétitions × 10m :</strong><br>'+
-        '① Départ arrêté, pieds parallèles · sprint pleine vitesse sur 10m<br>'+
-        '② Récupération complète 40s entre chaque (marche)<br>'+
-        '③ Départs variés : face · dos · côté gauche · côté droit<br>'+
-        '④ Focus : premier appui explosif, ne pas se redresser avant 7-8m',
-      note:'Qualité > quantité — 100% sur chaque sprint, récup complète entre chaque'},
-    // S2 — Sprints courts
-    {titre:'⚡ Sprints courts — 8 × 15m', icone:'⚡',
-      detail:'<strong>8 répétitions × 15m :</strong><br>'+
-        '① 2 sprints départ face · 2 sprints départ dos · 2 sprints départ côté gauche · 2 sprints départ côté droit<br>'+
-        '② Récupération 45s entre chaque (marche retour)<br>'+
-        '③ Objectif : vitesse maximale dès le 1er pas',
-      note:'Ces 15m correspondent à la distance d\'un débordement en handball — travail très spécifique'},
-    // S3 — Changements de direction
-    {titre:'⚡ Changements de direction — 4 × parcours 20m', icone:'⚡',
-      detail:'<strong>4 répétitions du parcours :</strong><br>'+
-        '① Place 2 plots à 10m de distance et 1 plot central<br>'+
-        '② Sprint 10m · appui rechange au plot · retour 10m · appui · sprint diagonal 5m<br>'+
-        '③ Récupération 1 min entre chaque<br>'+
-        '④ Focus : planter le pied extérieur pour relancer, bassin bas dans les appuis',
-      note:'Simulation des mouvements défensifs en handball — rester bas dans les appuis'},
-    // S4 — RSA handball
-    {titre:'⚡ RSA handball — 6 × aller-retour 10m', icone:'⚡',
-      detail:'<strong>6 répétitions :</strong><br>'+
-        '① Sprint 10m aller · demi-tour · sprint 10m retour (= 1 répétition)<br>'+
-        '② Récupération 20s seulement entre chaque (simulation pressing match)<br>'+
-        '③ Maintenir la vitesse sur TOUTES les répétitions<br>'+
-        '④ Si tu perds plus de 10% de vitesse : récup 30s supplémentaires',
-      note:'RSA = Repeated Sprint Ability — la qualité physique la plus importante en handball'},
-    // S5 — Activation légère
-    {titre:'⚡ Activation vitesse — 4 × 15m', icone:'⚡',
-      detail:'<strong>4 répétitions × 15m à 80% :</strong><br>'+
-        '① Pas à pleine vitesse — 80% max, sensations avant tout<br>'+
-        '② Récupération 1 min entre chaque<br>'+
-        '③ Objectif : garder les jambes vives sans se fatiguer avant la reprise',
-      note:'Dernière semaine — on maintient les sensations, on ne charge plus'}
-  ];
+  // ── SEMAINE 2 : Explosivité + Fractionné moyen ────────────────────────────
+  if(weekIdx===1){
+    const nT = fv(menager?3:4, ressenti);
+    const renfo = {
+      titre:`Circuit Explosivité — ${nT} passages · 45s/15s`, icone:'⚡',
+      detail:`<strong>${nT} passages · 45s effort · 15s récup · 90s récup entre passages</strong><br>On passe à la vitesse supérieure — les mecs sortent fatigués.`,
+      sousBlocs:[
+        exo('Squat sauté','🦵',
+          '<strong>45s — explosivité :</strong><br>① Squat complet descente <strong>3s</strong><br>② Remontée explosive avec saut, bras dans le dos<br>③ Réception souple genoux fléchis — jamais verrouillés<br>④ Enchaîne immédiatement',
+          'Réception souple — genou dans l\'axe', 'squat_saute',
+          'Sans saut : squat lent 4s descente, remontée rapide'),
+        exo('Fente sautée','🦵',
+          '<strong>45s — alternance en saut :</strong><br>① Fente basse<br>② Saut pour changer de jambe en l\'air<br>③ Réception souple en fente de l\'autre côté',
+          'Si genoux tirent : fentes alternées sans saut', 'fente_sautee'),
+        exo('Pompes déclinées','💪',
+          '<strong>45s :</strong><br>① Pieds sur chaise ou mur, mains au sol<br>② Descente lente <strong>3s</strong>, front vers le sol<br>③ Remontée explosive<br>④ Variante : pompes normales si pas de support',
+          'Corps droit — hanches qui ne s\'affaissent pas'),
+        exo('Gainage dynamique (Mountain climbers)','🔷',
+          '<strong>45s :</strong><br>① Position planche bras tendus, corps aligné<br>② Ramène genoux alternativement vers la poitrine<br>③ Rythme soutenu, bassin STABLE — pas de rotation',
+          'Bassin fixe — toute la puissance vient des jambes'),
+        exo('Nordic Curl','🦵',
+          '<strong>Max reps :</strong><br>① Pieds coincés sous un meuble lourd ou tenus par quelqu\'un<br>② Corps droit, chute lente <strong>4-5 secondes</strong> en freinant avec les ischios<br>③ Mains pour se rattraper, remontée avec les bras<br>④ Même 3 reps propres = excellent',
+          'L\'exercice anti-blessure ischios n°1 — indispensable pour les handballeurs', 'nordic_curl'),
+        exo('Burpees enchaînés','🔥',
+          '<strong>45s — finisseur total :</strong><br>① Planche + pompe + retour + saut bras levés<br>② Rythme le plus rapide possible en gardant la qualité',
+          'Vide les réservoirs — donne tout', 'burpees'),
+      ]
+    };
+    const nR = fv(6, ressenti);
+    const cardio = {titre:`Fractionné — ${nR}×3 min`, icone:'⚡', duree:180,
+      detail:`<strong>${nR} × 3 minutes</strong> à <strong>${vit(vma,pctV)} km/h (${allure(vma,pctV)}/km)</strong><br><strong>2 min récup active</strong> entre chaque.<br>Effort intense — phrases courtes possibles seulement.`,
+      note:`Groupe ${gr} · ${Math.round(pctV*100)}% VMA · Après le renfo = simulation match`};
+    return _build(weekIdx,'S2 — Explosivité + Fractionné','55-60 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
+  }
 
-  const blocVitesse = vitesseBlocs[Math.min(weekIdx, 4)];
+  // ── SEMAINE 3 : Force lourde + Fractionné court ───────────────────────────
+  if(weekIdx===2){
+    const nTF = fv(menager?3:4, ressenti);
+    const nTP = fv(menager?2:3, ressenti);
+    const renfo = {
+      titre:'Double circuit — Force puis Puissance', icone:'💪',
+      detail:`<strong>Circuit A (Force) — ${nTF} passages · 8 reps lentes · 45s récup</strong><br><strong>Circuit B (Puissance) — ${nTP} passages · 30s max · 45s récup</strong>`,
+      sousBlocs:[
+        exo('[A] Squat Bulgare','🦵',
+          '<strong>8 reps/jambe :</strong><br>① Pied arrière posé sur chaise ou canapé, pied avant loin devant<br>② Descente très lente <strong>4s</strong>, genou arrière vers le sol<br>③ Remontée en poussant dans le talon avant<br>④ 8 reps d\'un côté, puis de l\'autre',
+          'L\'exercice le plus efficace pour ischios et fessiers — plus dur qu\'il n\'y paraît', 'squat_bulgare'),
+        exo('[A] Hip Thrust','🍑',
+          '<strong>12 reps :</strong><br>① Épaules sur chaise ou canapé, pieds à plat, genoux à 90°<br>② Monte les hanches en serrant fort les fessiers<br>③ Tiens <strong>2s</strong> en haut, descends lentement <strong>3s</strong><br>④ Sac à dos lesté si trop facile',
+          'Pousse dans les talons, serre les fessiers fort en haut', 'hip_thrust'),
+        exo('[A] Nordic Curl — série longue','🦵',
+          '<strong>6-8 reps :</strong><br>① Chute lente <strong>5s</strong>, freine avec tes ischios<br>② 2 min récup entre passages — c\'est intense',
+          'Si moins de 4 reps : chute 3s, c\'est déjà très bien', 'nordic_curl'),
+        exo('[A] Superman','🔷',
+          '<strong>12 reps :</strong><br>① Allongé face au sol, bras tendus devant<br>② Décolle simultanément bras et jambes, <strong>2s en haut</strong><br>③ Descends lentement <strong>3s</strong><br>④ Chaîne postérieure complète',
+          'Dos, fessiers, ischios — tout en même temps', 'superman'),
+        exo('[B] Squat sauté max','⚡',
+          '<strong>30s — saut le plus haut possible :</strong><br>① Squat profond puis saut explosif<br>② Réception souple · Enchaîne immédiatement',
+          'C\'est là que tu vois qui a travaillé cet été'),
+        exo('[B] Pompes explosives','💪',
+          '<strong>30s :</strong><br>① Remontée explosive, essaie de décoller les mains<br>② Claque des mains si tu y arrives',
+          'Explosivité pectoraux', 'pompes_explosives'),
+        exo('[B] Fente sautée max','⚡',
+          '<strong>30s — rythme maximum :</strong><br>① Saut en changeant de jambe à chaque répétition<br>② Rythme maximal · 45s récup entre passages',
+          'Finisseur — vide les réservoirs', 'fente_sautee'),
+      ]
+    };
+    const nR = fv(8, ressenti);
+    const cardio = {titre:`Fractionné court — ${nR}×1 min`, icone:'⚡', duree:60,
+      detail:`<strong>${nR} × 1 minute</strong> à <strong>${vit(vma,pctM)} km/h (${allure(vma,pctM)}/km)</strong><br><strong>1 min 30 récup</strong> · Effort maximal — simulation sprint handball.`,
+      note:`Groupe ${gr} · ${Math.round(pctM*100)}% VMA · Après le renfo lourd = fin de match`};
+    return _build(weekIdx,'S3 — Force + Puissance + Sprint','55-60 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
+  }
 
-  return {
-    titre:'Cardio + Vitesse + Prévention',
-    type:'Cardio', typeColor:'var(--red)', typeIcon:'🔥',
-    obligatoire:true, tags:['cardio','vitesse','ppp'],
-    semaine:weekIdx+1, duree:'55-65 min',
-    ressenti:'enforme',
-    notePoste:noteImpact,
-    blocs:[blocEchauf, cardioBloc, blocVitesse, blocPPP, blocCalme]
+  // ── SEMAINE 4 : Peak volume — la plus dure 🔥🔥 ──────────────────────────
+  if(weekIdx===3){
+    const nTA = fv(menager?3:5, ressenti);
+    const nTB = fv(menager?2:3, ressenti);
+    const renfo = {
+      titre:`Circuit Peak — Force ${nTA} passages + Puissance ${nTB} passages`, icone:'🔥',
+      detail:`<strong>Circuit A — ${nTA} passages · 10 reps / 30s récup</strong><br><strong>Circuit B — ${nTB} passages · 40s max / 15s récup</strong><br>La séance la plus dure du cycle — tu dois sortir épuisé.`,
+      sousBlocs:[
+        exo('[A] Squat bulgare leste','🦵',
+          '<strong>10 reps/jambe :</strong><br>① Pied arrière sur chaise, sac à dos lesté ou haltères si dispo<br>② Descente <strong>3s</strong>, genou arrière au sol<br>③ Remontée explosive — pousse dans le talon',
+          'Charge max du cycle — si douleur au genou, passe en poids de corps', 'squat_bulgare'),
+        exo('[A] Hip Thrust unilatéral','🍑',
+          '<strong>10 reps/jambe :</strong><br>① Épaules sur chaise, UN pied au sol, l\'autre jambe levée<br>② Monte les hanches sur une seule jambe<br>③ Tiens <strong>2s</strong> en haut · Descends <strong>3s</strong>',
+          'Encore plus dur que le bilatéral — renforce la stabilité', 'hip_thrust'),
+        exo('[A] Nordic Curl — série complète','🦵',
+          '<strong>8-10 reps :</strong><br>① Chute la plus lente possible · 5s objectif<br>② 2 min récup — ischios à bloc',
+          'Volume maximum du cycle sur les ischios', 'nordic_curl'),
+        exo('[A] Pistol Squat aidé','🦵',
+          '<strong>6 reps/jambe :</strong><br>① Debout sur une jambe, l\'autre tendue devant<br>② Descends sur la jambe d\'appui en tenant le mur ou une chaise d\'une main<br>③ Remonte lentement<br>④ Variante : assis sur chaise, relève-toi sur une jambe sans les bras',
+          'L\'exercice unilatéral ultime — simule les appuis de handball'),
+        exo('[B] Squat sauté enchaîné','⚡',
+          '<strong>40s — sauts continus :</strong><br>① Squat profond + saut le plus haut · Réception souple · Enchaîne sans pause · 15s récup',
+          'Le plus de répétitions possibles — qualité des atterrissages'),
+        exo('[B] Pompes + fente sautée enchaînées','💪',
+          '<strong>40s :</strong><br>① 5 pompes explosives puis immédiatement 5 fentes sautées<br>② Recommence pendant 40s · 15s récup',
+          'Enchaînement upper + lower body — ça fait mal'),
+        exo('[B] Burpees lestés ou normaux','🔥',
+          '<strong>40s — finisseur absolu :</strong><br>① Burpee complet avec pompe et saut · Rythme maximum · 15s récup<br>② Sac à dos léger si tu veux surcharger',
+          'Dernier bloc du pic de charge — vide complètement les réservoirs', 'burpees'),
+      ]
+    };
+    const nB = fv(4, ressenti);
+    const nF = fv(5, ressenti);
+    const cardio = {titre:`Fractionné long + Finisseur`, icone:'⚡', duree:300,
+      detail:`<strong>Phase 1 : ${nB}×5 min</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong> · 3 min récup<br><strong>Phase 2 : ${nF}×30s</strong> à <strong>${vit(vma,pctM)} km/h (${allure(vma,pctM)}/km)</strong> · 30s récup<br>Phase 2 = finisseur maximal après les blocs longs.`,
+      note:`${Math.round(pctS*100)}% puis ${Math.round(pctM*100)}% VMA · C\'est supposé faire très mal`};
+    return _build(weekIdx,'S4 — Peak charge 🔥🔥','60-65 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
+  }
+
+  // ── SEMAINE 5 : Affûtage explosif ⚡ ──────────────────────────────────────
+  const nT = fv(menager?2:3, ressenti);
+  const renfo = {
+    titre:`Circuit Affûtage — ${nT} passages · 30s/30s`, icone:'⚡',
+    detail:`<strong>${nT} passages · 30s max · 30s récup — vitesse et puissance, pas volume</strong><br>Objectif : rester explosif et frais pour le collectif.`,
+    sousBlocs:[
+      exo('Squat sauté explosif','⚡','<strong>30s — saut maximum :</strong><br>Squat + saut le plus haut · Réception souple','Qualité des sauts — pas de volume', 'squat_saute'),
+      exo('Pompes explosives','💪','<strong>30s — puissance pectoraux :</strong><br>Remontée explosive, mains qui décollent si possible','Explosivité pure', 'pompes_explosives'),
+      exo('Fente sautée','⚡','<strong>30s — jambes explosives :</strong><br>Saut en changeant de jambe · Rythme maximum','Reste rapide et léger', 'fente_sautee'),
+      exo('Nordic Curl entretien','🦵','<strong>5 reps :</strong><br>Chute 5s · On ne relâche pas la prévention<br>Volume réduit mais maintenu','Maintenir les gains ischios avant le collectif', 'nordic_curl'),
+      exo('Gainage 360°','🔷','<strong>30s ventral + 30s latéral D + 30s latéral G :</strong><br>Enchaîne sans pause · Activation du gainage','Activation complète en une seule mini-série'),
+    ]
   };
+  const nR = fv(8, ressenti);
+  const cardio = {titre:`Fractionné affûtage — ${nR}×45s`, icone:'⚡', duree:45,
+    detail:`<strong>${nR} × 45 secondes</strong> à <strong>${vit(vma,pctM)} km/h (${allure(vma,pctM)}/km)</strong><br><strong>1 min 15 récup</strong> · Intensité max, volume réduit.`,
+    note:`Groupe ${gr} · ${Math.round(pctM*100)}% VMA · Presque là — encore un effort`};
+  return _build(weekIdx,'S5 — Affûtage explosif ⚡','50 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(false)]);
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// SÉANCE 2 (JEUDI) — Cardio dominant + Appuis handball + Renfo léger
+// ════════════════════════════════════════════════════════════════════════════════
 export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
-  const adapt=getProfilAdapt(joueur);
-  const ppp=getPPP_niveauxIndiv(weekIdx);
-  const menager=adapt.profil==='menager';
-  const nbTours = weekIdx<=1?2 : weekIdx<=3?3 : 2;
-  const f = menager?0.7:1;
-  const nSquat=Math.round((weekIdx===4?10:12)*f);
-  const nFente=Math.round(8*f);
-  const nPompe=Math.round((adapt.profil==='jeune'?10:8)*f);
-  const nPont=Math.round(12*f);
-  const gain=weekIdx===4?20:30;
+  const vma   = joueur.vma||13;
+  const adapt  = getProfilAdapt(joueur);
+  const gr    = getGroupe(vma);
+  const si    = adapt.sansImpact;
+  const menager = adapt.profil==='menager';
+  const matF  = (() => { const m=joueur.materiel||[]; return m.includes('Salle de muscu')?'salle':m.includes('Élastiques')?'elast':'aucun'; })();
+  const noteImpact = si?'🔵 Articulations : marche rapide ou vélo à la place de la course. Exercices de renfo identiques.':null;
 
-  // ── Descriptions des exercices selon matériel ──────────────────────────
-  const descSquat={
-    aucun:`<strong>Squat poids du corps — ${nSquat} rép :</strong><br>`+
-      `① Pieds écartés largeur d'épaules, orteils légèrement vers l'extérieur<br>`+
-      `② Descente lente <strong>3 secondes</strong>, genoux dans l'axe des orteils<br>`+
-      `③ Descends jusqu'aux cuisses parallèles au sol<br>`+
-      `④ Remonte en poussant dans les talons`,
-    elast:`<strong>Squat avec élastique — ${nSquat} rép :</strong><br>`+
-      `① Place l'élastique sous les pieds, tenu dans les mains à hauteur d'épaules<br>`+
-      `② Descente lente <strong>3 secondes</strong>, genoux dans l'axe<br>`+
-      `③ Résistance de l'élastique en montée — pousse fort<br>`+
-      `④ Variante : élastique au-dessus des genoux pour activer les fessiers`,
-    salle:`<strong>Squat haltères — ${nSquat} rép :</strong><br>`+
-      `① Haltères tenus le long du corps ou en goblet (1 haltère devant)<br>`+
-      `② Charge : <strong>${weekIdx<=1?'10-15':'15-20'} kg</strong> au total selon ta force<br>`+
-      `③ Descente contrôlée <strong>3s</strong>, remontée explosive<br>`+
-      `④ Dos droit, regard devant`
-  };
+  const pctF = gr==='A'?0.72:gr==='B'?0.70:0.68;
+  const pctS = gr==='A'?0.83:gr==='B'?0.80:0.76;
+  const pctV = gr==='A'?0.90:gr==='B'?0.86:0.82;
 
-  const descFente={
-    aucun:`<strong>Fentes poids du corps — ${nFente}/jambe :</strong><br>`+
-      `① Pas en avant, genou avant à 90°, genou arrière près du sol<br>`+
-      `② Descente lente <strong>3 secondes</strong>, genou avant dans l'axe du pied<br>`+
-      `③ Pousse sur le pied avant pour revenir<br>`+
-      `④ Alterne jambe gauche et droite`,
-    elast:`<strong>Fentes avec élastique — ${nFente}/jambe :</strong><br>`+
-      `① Élastique sous le pied avant, tenu dans les mains à hauteur d'épaules<br>`+
-      `② Descente contrôlée, résistance en remontée<br>`+
-      `③ Ou élastique autour des genoux pour activer les fessiers latéraux`,
-    salle:`<strong>Fentes haltères — ${nFente}/jambe :</strong><br>`+
-      `① Haltères dans chaque main, <strong>${weekIdx<=1?'6-8':'8-12'} kg/main</strong><br>`+
-      `② Pas long en avant, descente contrôlée<br>`+
-      `③ Genou arrière à 2-3 cm du sol, dos droit<br>`+
-      `④ Remontée explosive — pousse dans le talon avant`
-  };
+  // ── Blocs appuis handball (faisables partout) ─────────────────────────────
+  const appuisS1 = {
+    titre:'Appuis handball — Initiation', icone:'🤾', duree:600,
+    detail:'<strong>10 min — faisable n\'importe où :</strong><br>'+
+      '① <strong>Shuffle latéral 20m :</strong> déplacements latéraux défense · 3×20m/sens · 30s récup<br>'+
+      '② <strong>Changements de direction simples :</strong> pose 3 objets (chaussures) espacés de 1m · slalom aller-retour · 4×<br>'+
+      '③ <strong>Carioca 20m :</strong> croisé avant/arrière · 3×20m/sens<br>'+
+      '④ <strong>5 démarrages explosifs :</strong> position défense basse → sprint 5m → frein → retour',
+    note:'Simulation des déplacements défensifs handball — travail des appuis latéraux', videoUrl:VIDEOS.shuffle_lateral};
 
-  const descPompe={
-    aucun:`<strong>Pompes — ${nPompe} rép :</strong><br>`+
-      `① Mains légèrement + larges que les épaules, corps droit<br>`+
-      `② Descente lente <strong>2s</strong>, poitrine près du sol<br>`+
-      `③ Sur les genoux si besoin — amplitude complète avant tout<br>`+
-      `④ Gainage du corps pendant toute l'exécution`,
-    elast:`<strong>Pompes avec élastique — ${nPompe} rép :</strong><br>`+
-      `① Élastique dans le dos, tenu sous les paumes<br>`+
-      `② Résistance en montée — renforce la poussée<br>`+
-      `③ Alternativement : pompes standard si l'élastique gêne`,
-    salle:`<strong>Pompes lestées — ${nPompe} rép :</strong><br>`+
-      `① Sac à dos lesté (5-10 kg) sur le dos<br>`+
-      `② Ou développé couché haltères : <strong>${weekIdx<=1?'8-12':'12-16'} kg/main</strong><br>`+
-      `③ Descente lente <strong>3s</strong>, remontée explosive`
-  };
+  const appuisS2 = {
+    titre:'Appuis handball — Accélérations + Changements direction', icone:'🤾', duree:720,
+    detail:'<strong>12 min :</strong><br>'+
+      '① <strong>T-drill maison :</strong> 4 objets en T espacés de 2m · Touche chaque objet en changeant de direction · 6× · 45s récup<br>'+
+      '② <strong>5-10-5 :</strong> Sprint 5m à D · Retour 10m à G · Sprint 5m retour centre · 6× · 30s récup<br>'+
+      '③ <strong>Carioca accélérée :</strong> 4×20m à vitesse max · 30s récup<br>'+
+      '④ <strong>Arrêts-relances :</strong> sprint 10m · stop net · repartir immédiatement · 8×',
+    note:'Format de jeu : les sprints court-stop-relance sont le cœur de l\'effort handball', videoUrl:VIDEOS.carioca};
 
-  const descPont={
-    aucun:`<strong>Pont fessier — ${nPont} rép :</strong><br>`+
-      `① Allongé sur le dos, genoux fléchis à 90°, pieds à plat<br>`+
-      `② Monte le bassin en contractant les fessiers — <strong>2s en haut</strong><br>`+
-      `③ Descente lente et contrôlée<br>`+
-      `④ Serre bien les fessiers en haut, sans cambrer le bas du dos${weekIdx+1 >= 3 ? '<br>⑤ Version unilatérale : une jambe tendue, 3×10/jambe':''}`,
-    elast:`<strong>Pont fessier avec élastique — ${nPont} rép :</strong><br>`+
-      `① Élastique au-dessus des genoux — pousse les genoux vers l'extérieur<br>`+
-      `② Monte le bassin, <strong>2s en haut</strong>, descente lente<br>`+
-      `③ L'élastique active les fessiers latéraux (moyen fessier) en plus<br>`+
-      `④ ${weekIdx>=2?'Version unilatérale : 3×10/jambe':'Bilatéral — contrôle la descente'}`,
-    salle:`<strong>Pont fessier lesté — ${nPont} rép :</strong><br>`+
-      `① Haltère posé sur le bassin, <strong>${weekIdx<=1?'10-15':'15-20'} kg</strong><br>`+
-      `② Monte le bassin, contracte fort en haut, <strong>2s</strong><br>`+
-      `③ ${weekIdx>=2?'Version unilatérale : haltère sur une cuisse, 3×10/jambe':'Bilatéral avec charge'}`
-  };
-
-  const descGainage={
-    aucun:`<strong>Gainage — ${gain}s frontal + 20s latéral/côté :</strong><br>`+
-      `① Planche avant : appui sur avant-bras et orteils — corps droit<br>`+
-      `② Contracte abdos, fessiers et cuisses en même temps<br>`+
-      `③ Planche latérale : appui sur un avant-bras, hanche décollée<br>`+
-      `④ Pas de rotation du bassin`,
-    elast:`<strong>Gainage dynamique avec élastique — ${gain}s :</strong><br>`+
-      `① Élastique autour des poignets en planche — tire les bras vers l'extérieur<br>`+
-      `② Ou planche avec reach : tend un bras devant, 10×/bras<br>`+
-      `③ Planche latérale classique : 20s/côté`,
-    salle:`<strong>Gainage dynamique — ${gain}s :</strong><br>`+
-      `① Planche avec disque : fais glisser un disque sous les mains en planche<br>`+
-      `② Ou ab wheel si disponible — 3×8-10 roulements<br>`+
-      `③ Planche latérale avec élévation jambe : 15 rép/côté`
-  };
-
-  // Note matériel en haut de séance
-  const matLabel={aucun:'🏠 Poids du corps', elast:'🔄 Élastiques', salle:'🏋️ Salle de muscu'};
-  const matNote=`Séance adaptée : <strong>${matLabel[mat]||'Poids du corps'}</strong>`;
-
-  // ── Échauffement ─────────────────────────────────────────────────────────
-  const blocEchauf={titre:'Échauffement', duree:600, icone:'🔥',
+  const appuisS3 = {
+    titre:'Appuis handball — Format match 30/30', icone:'🤾', duree:600,
     detail:'<strong>10 min :</strong><br>'+
-      '① 3 min footing léger<br>'+
-      '② 2 min mobilité : rotations d\'épaules (10×/sens) · cercles de hanches (10×) · squats aériens lents (10×)<br>'+
-      '③ 2 min activation : montées de genoux × 20m · talons-fesses × 20m<br>'+
-      '④ 3 min : fentes dynamiques (10/jambe) · gainage 20s · 5 pompes lentes'};
+      '① <strong>10×30s/30s appuis mixtes :</strong> Alterne à chaque répétition entre :<br>'+
+      '   • Shuffles latéraux max<br>   • Sprint + arrêt net + changement de direction<br>   • Carioca max<br>   • 5-10-5<br>'+
+      '② Récup 30s complète entre chaque répétition',
+    note:'Format exact 30/30 = simulation des efforts en match', videoUrl:VIDEOS.carioca};
 
-  // ── PPP ──────────────────────────────────────────────────────────────────
-  const blocPPP={titre:`Prévention blessures — Niveau ${ppp.niveau}/3`, detail:'',
-    icone:'🛡️', isPPP:true, pppExos:ppp.exos,
-    note:`Semaine ${weekIdx+1} — maintenu même en cas de fatigue`};
+  const appuisS4 = {
+    titre:'Appuis handball — Intensité maximale', icone:'🤾', duree:600,
+    detail:'<strong>10 min :</strong><br>'+
+      '① <strong>8×30s appuis maximum :</strong> Choisis parmi shuffle, T-drill, 5-10-5 · Intensité absolue · 30s récup<br>'+
+      '② <strong>4×5 démarrages explosifs :</strong> Position défense basse → sprint 5m → arrêt net · 15s entre chaque · 45s entre séries<br>'+
+      '③ 2 min récup puis enchaîne directement sur le renfo',
+    note:'Peak de volume sur les appuis — simulation de fin de match tendu'};
 
-  // ── Étirements ───────────────────────────────────────────────────────────
-  const blocEtirem={titre:'Étirements', duree:480, icone:'🧘',
-    detail:'<strong>8 min — 20 à 30s par étirement, sans à-coups :</strong><br>'+
-      '① Ischios : assis jambes tendues, buste vers l\'avant · 30s/jambe<br>'+
-      '② Quadriceps : debout, talon aux fesses · 30s/jambe<br>'+
-      '③ Adducteurs : assis en papillon, pousse doucement les genoux · 30s<br>'+
-      '④ Épaules/triceps : bras plié derrière la tête · 20s/côté<br>'+
-      '⑤ Mollets : jambe arrière tendue, talon au sol · 20s/jambe'};
+  const appuisS5 = {
+    titre:'Activation appuis pré-collectif', icone:'🤾', duree:480,
+    detail:'<strong>8 min — activation légère :</strong><br>'+
+      '① <strong>Shuffles latéraux :</strong> 4×20m à 80% · 30s récup<br>'+
+      '② <strong>Carioca :</strong> 4×20m à 80% · 30s récup<br>'+
+      '③ <strong>6 démarrages explosifs :</strong> 5m · Stop net · Retour<br>'+
+      '④ Objectif : activer les appuis sans se fatiguer avant le collectif',
+    note:'Légère et vive — arriver frais et réactif au collectif'};
 
-  const blocEtiremLong={titre:'Étirements prolongés', duree:600, icone:'🧘',
-    detail:'<strong>10 min — prends le temps :</strong><br>'+
-      '① Ischios : assis jambes tendues · 30s/jambe<br>'+
-      '② Quadriceps : allongé sur le côté, talon aux fesses · 30s/jambe<br>'+
-      '③ Adducteurs : papillon · 30s<br>④ Épaules : bras croisé · 20s/côté<br>'+
-      '⑤ Mollets : pied contre mur · 20s/jambe<br>⑥ Dos : chat-vache 10× · enfant 30s',
-    note:'Corps fatigué → on prend 10 min pour bien étirer et récupérer'};
-
-  // ════════════════════════════════════════════════════════════════════════
-  // 😴 FATIGUÉ
-  // ════════════════════════════════════════════════════════════════════════
-  if(ressenti==='fatigue'){
-    const circuitFatigue=`<strong>1 passage allégé — allure calme, amplitude complète :</strong><br>`+
-      `• Squats : <strong>${Math.round(nSquat*0.7)} rép</strong> · ${mat==='salle'?'haltères légers':'poids du corps'} · descente lente 4s<br>`+
-      `• Fentes : <strong>${Math.round(nFente*0.7)}/jambe</strong> · descente contrôlée<br>`+
-      `• Pompes (sur genoux si besoin) : <strong>${Math.round(nPompe*0.7)} rép</strong><br>`+
-      `• Pont fessier : <strong>${Math.round(nPont*0.7)} rép</strong> · 2s en haut<br>`+
-      `• Gainage ventral : <strong>20s</strong>`;
-    return {
-      titre:'Renforcement léger + Prévention',
-      type:'Force', typeColor:'#11984c', typeIcon:'💪',
-      obligatoire:true, tags:['force','ppp'],
-      semaine:weekIdx+1, duree:'40-45 min',
-      ressenti:'fatigue', materiel:mat,
-      notePoste:menager?'🔵 Profil à ménager : doses réduites':null,
-      blocs:[
-        blocEchauf,
-        {titre:'Circuit allégé — 1 passage', detail:circuitFatigue, icone:'💪',
-          note:`${matNote} · Corps fatigué → 1 seul tour, bien fait. L\'essentiel c\'est d\'être là.`},
-        blocPPP, blocEtiremLong
+  // ── SEMAINE 1 : Base aérobie + Gainage ───────────────────────────────────
+  if(weekIdx===0){
+    const dureeC = fv(20, ressenti);
+    const cardio = {titre:`Endurance continue — ${dureeC} min`, icone:'🏃', duree:dureeC*60,
+      detail:`<strong>${dureeC} minutes</strong> à <strong>${vit(vma,pctF)} km/h (${allure(vma,pctF)}/km)</strong><br>`+
+        (si?'Marche rapide ou vélo si course inconfortable.':'Allure conversation — tu dois pouvoir parler facilement tout du long.'),
+      note:`Groupe ${gr} · ${Math.round(pctF*100)}% VMA · Construction base aérobie`};
+    const nT = fv(menager?2:3, ressenti);
+    const renfoL = {
+      titre:`Gainage et stabilité — ${nT} passages`, icone:'🔷',
+      detail:`<strong>${nT} passages · 40s / 30s récup</strong>`,
+      sousBlocs:[
+        exo('Gainage ventral','🔷','<strong>40s :</strong> Avant-bras, corps aligné · Serre abdos + fessiers · Respire','Dos plat — ni trop haut ni qui s\'affaisse'),
+        exo('Gainage latéral','🔷','<strong>40s/côté :</strong> Avant-bras, bassin décollé · Corps aligné','Hanche haute pendant toute la durée'),
+        exo('Pont fessier bilatéral','🍑','<strong>40s reps :</strong> Monte les hanches fort · Descente lente 3s','Serre les fessiers — pas le bas du dos'),
+        exo('Équilibre unipodal','🦶','<strong>30s/pied :</strong> Genou souple · Ferme les yeux si trop facile','Genou jamais verrouillé'),
       ]
     };
+    return _build(weekIdx,'S1 — Base aérobie + Stabilité','50 min',ressenti,noteImpact,[echauffCourse(),cardio,appuisS1,renfoL,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
   }
 
-  // ── Circuit principal ────────────────────────────────────────────────────
-  const circuitBlocs=[
-    {titre:`Squats — ${nSquat} rép`, icone:'🦵', detail:descSquat[mat]||descSquat.aucun},
-    {titre:`Fentes — ${nFente}/jambe`, icone:'🦵', detail:descFente[mat]||descFente.aucun},
-    {titre:`Pompes — ${nPompe} rép`, icone:'💪', detail:descPompe[mat]||descPompe.aucun},
-    {titre:`Pont fessier — ${nPont} rép`, icone:'🍑', detail:descPont[mat]||descPont.aucun},
-    {titre:`Gainage — ${gain}s`, icone:'🧱', duree:gain, detail:descGainage[mat]||descGainage.aucun},
-  ];
-
-  // ════════════════════════════════════════════════════════════════════════
-  // 😐 NORMAL
-  // ════════════════════════════════════════════════════════════════════════
-  if(ressenti==='normal'){
-    return {
-      titre:'Renforcement + Prévention',
-      type:'Force', typeColor:'#11984c', typeIcon:'💪',
-      obligatoire:true, tags:['force','ppp'],
-      semaine:weekIdx+1, duree:'45-55 min',
-      ressenti:'normal', materiel:mat,
-      notePoste:menager?'🔵 Profil à ménager : doses réduites, sans sauts':null,
-      blocs:[
-        blocEchauf,
-        {titre:`Circuit renforcement — ${nbTours} passages`,
-          detail:`<strong>${nbTours} passages</strong> du circuit ci-dessous · récup <strong>2 min</strong> entre chaque tour<br><br>${matNote}`,
-          icone:'💪', note:weekIdx===4?'Dernière semaine — circuit allégé, on garde du jus.':'Qualité du mouvement avant la vitesse.',
-          sousBlocs:circuitBlocs},
-        blocPPP, blocEtirem
+  // ── SEMAINE 2 : Seuil + Appuis + Gainage dynamique ───────────────────────
+  if(weekIdx===1){
+    const nB = fv(4, ressenti);
+    const cardio = {titre:`Fractionné seuil — ${nB}×5 min`, icone:'🏃', duree:300,
+      detail:`<strong>${nB} × 5 minutes</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong><br><strong>2 min 30 récup active</strong> · Effort soutenu.`,
+      note:`Groupe ${gr} · ${Math.round(pctS*100)}% VMA · Seuil anaérobie — caisse qui se construit`};
+    const nT = fv(menager?2:3, ressenti);
+    const renfoL = {
+      titre:`Gainage dynamique + Ischios — ${nT} passages`, icone:'🔷',
+      detail:`<strong>${nT} passages · 45s / 20s récup</strong>`,
+      sousBlocs:[
+        exo('Mountain climbers','🔷','<strong>45s :</strong> Position planche · Genoux alternativement vers la poitrine · Rythme soutenu · Bassin stable','Bassin fixe — pas de rotation'),
+        exo('Pont fessier unilatéral','🍑','<strong>45s/jambe :</strong> Un pied au sol, l\'autre levé · Monte les hanches · Plus difficile que le bilatéral','Renforce aussi la stabilité du bassin'),
+        exo('Superman dynamique','🔷','<strong>45s :</strong> Allongé face au sol · Décolle bras + jambes · 2s en haut · Descente lente','Chaîne postérieure complète', 'superman'),
+        exo('Rotation externe épaule','💪','<strong>15 reps/bras :</strong> Coude collé 90° · Rotation vers l\'extérieur avec élastique léger ou partenaire','Protection épaule du lanceur — indispensable'),
       ]
     };
+    return _build(weekIdx,'S2 — Seuil + Appuis + Gainage','55 min',ressenti,noteImpact,[echauffCourse(),cardio,appuisS2,renfoL,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // 🔥 EN FORME — blocs handball spécifiques
-  // ════════════════════════════════════════════════════════════════════════
-  const nordicBlocs=[
-    {titre:'🦵 Nordic Curl — Introduction', icone:'🦵',
-      detail:'<strong>3 séries × 5 répétitions :</strong><br>'+
-        '① À genoux, talons bloqués sous un meuble lourd<br>'+
-        '② Corps droit, descente lente <strong>5 secondes</strong> en freinant avec les ischios<br>'+
-        '③ Pose les mains au sol pour amortir, pousse pour revenir<br>④ Récup 90s entre chaque série',
-      note:mat==='aucun'?'⚠️ Sans meuble ? → Pont fessier unilatéral 3×15 pause haute 3s':'💪 Descente lente = travail excentrique — qualité avant quantité'},
-    {titre:'🦵 Nordic Curl + Pliométrie basse', icone:'🦵',
-      detail:'<strong>Nordic Curl — 3×6 (descente 5s)</strong> · récup 90s<br><br>'+
-        '<strong>Sauts latéraux stabilisés — 3×10 :</strong><br>'+
-        '① Saut latéral explosif · réception sur 1 pied · stabilise 2s genou fléchi<br>'+
-        '② Alterne gauche/droite · récup 1 min entre les séries',
-      note:'Double bénéfice : prévention entorse + explosivité latérale handball'},
-    {titre:'🦵 Nordic Curl + Rotation épaule', icone:'🦵',
-      detail:'<strong>Nordic Curl — 3×8 (descente 4s)</strong> · récup 2 min<br><br>'+
-        `<strong>Rotation externe épaule — 3×15/bras :</strong><br>`+
-        (mat==='aucun'
-          ?'① Mouvement lent à vide ou petite bouteille (0,5L)<br>② Coude collé, tourne lentement · retour lent 3s'
-          :'① Élastique ou poulie basse · coude collé au corps à 90°<br>② Tourne l\'avant-bras vers l\'extérieur · retour lent 3s'),
-      note:'Rotation externe = exercice n°1 prévention tendinite — essentiel pour les tireurs'},
-    {titre:'🦵 Nordic Curl + Pliométrie haute', icone:'🦵',
-      detail:'<strong>Nordic Curl — 3×8 (descente 4s)</strong> · récup 2 min<br><br>'+
-        '<strong>Sauts genoux-poitrine — 3×8 :</strong><br>'+
-        '① Saut vertical maximal · genoux vers la poitrine · récep souple<br>'+
-        (mat==='salle'?'② Gilet lesté 5-10 kg si disponible<br>':'')+
-        '<strong>Fentes sautées — 3×6 :</strong><br>'+
-        '③ Fente basse · saut · change de jambe dans l\'air · réception en fente<br>④ Récup 2 min entre les séries',
-      note:'⚠️ Séance exigeante — douleur genou ou ischio → stoppe et signale au coach'},
-    {titre:'🦵 Activation ischios/explosivité légère', icone:'🦵',
-      detail:'<strong>Nordic Curl léger — 2×6 (descente 5s)</strong> · récup 2 min<br><br>'+
-        '<strong>Sauts latéraux — 2×10 :</strong><br>① Explosivité légère, réception stabilisée · garder les sensations',
-      note:'Dernière semaine — on maintient, on ne charge plus. On arrive frais.'}
-  ];
+  // ── SEMAINE 3 : Format handball 30/30 + Ischios ───────────────────────────
+  if(weekIdx===2){
+    const nL = fv(3, ressenti);
+    const cardio1 = {titre:`Fractionné moyen — ${nL}×6 min`, icone:'🏃', duree:360,
+      detail:`<strong>${nL} × 6 minutes</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong><br><strong>3 min récup</strong> · Seuil anaérobie.`,
+      note:`${Math.round(pctS*100)}% VMA · Construction endurance`};
+    const nC = fv(10, ressenti);
+    const cardio2 = {titre:`Fractionné handball — ${nC}×30s/30s`, icone:'⚡', duree:30,
+      detail:`<strong>${nC} × 30 secondes</strong> à <strong>${vit(vma,pctV)} km/h (${allure(vma,pctV)}/km)</strong><br><strong>30s récup</strong> · Format exact des efforts handball.`,
+      note:`${Math.round(pctV*100)}% VMA · Après le long = simulation vraie d\'un match`};
+    const nT = fv(menager?2:3, ressenti);
+    const renfoL = {
+      titre:`Circuit ischios + genou — ${nT} passages`, icone:'🦵',
+      detail:`<strong>${nT} passages · 45s / 30s récup</strong>`,
+      sousBlocs:[
+        exo('Nordic Curl','🦵','<strong>Max reps :</strong> Pieds coincés · Chute 5s · Mains pour revenir','Anti-blessure ischios n°1', 'nordic_curl'),
+        exo('Squat pistol aidé','🦵','<strong>6 reps/jambe :</strong> Sur une jambe · Autre jambe tendue devant · Aide-toi du mur ou chaise · Descends le plus bas possible','Renforce le genou en unilatéral — simulation appuis handball'),
+        exo('Gainage latéral dynamique','🔷','<strong>40s/côté :</strong> Gainage latéral · Monte et descends le bassin lentement · Contrôle parfait','Lent et contrôlé — qualité absolue'),
+      ]
+    };
+    return _build(weekIdx,'S3 — Format handball + Ischios','55-60 min',ressenti,noteImpact,[echauffCourse('④ 4×20m carioca pour activer les appuis'),cardio1,appuisS3,cardio2,renfoL,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
+  }
 
-  return {
-    titre:'Renforcement Spécifique + Prévention',
-    type:'Force', typeColor:'#11984c', typeIcon:'🔥',
-    obligatoire:true, tags:['force','explosivite','ppp'],
-    semaine:weekIdx+1, duree:'55-65 min',
-    ressenti:'enforme', materiel:mat,
-    notePoste:menager?'🔵 Profil à ménager : évite les nordic curls, reste sur pont fessier':null,
-    blocs:[
-      blocEchauf,
-      {titre:`Circuit renforcement — ${nbTours} passages`,
-        detail:`<strong>${nbTours} passages</strong> · récup <strong>2 min</strong> entre chaque tour<br><br>${matNote}`,
-        icone:'💪', note:'Programme standard maintenu — les blocs handball viennent en plus.',
-        sousBlocs:circuitBlocs},
-      nordicBlocs[Math.min(weekIdx,4)],
-      blocPPP, blocEtirem
+  // ── SEMAINE 4 : Volume max cardio + Circuit complet ───────────────────────
+  if(weekIdx===3){
+    const nB = fv(4, ressenti);
+    const cardio1 = {titre:`Fractionné long — ${nB}×8 min`, icone:'🏃', duree:480,
+      detail:`<strong>${nB} × 8 minutes</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong><br><strong>3 min récup</strong> · Le bloc cardio le plus long du cycle.`,
+      note:`${Math.round(pctS*100)}% VMA · Volume max — les réservoirs doivent être vides`};
+    const nF = fv(6, ressenti);
+    const cardio2 = {titre:`Finisseur — ${nF}×30s`, icone:'⚡', duree:30,
+      detail:`<strong>${nF} × 30 secondes</strong> à <strong>${vit(vma,pctV)} km/h (${allure(vma,pctV)}/km)</strong><br><strong>30s récup</strong> · Après les longs blocs, vide les réservoirs.`,
+      note:`${Math.round(pctV*100)}% VMA · Finisseur — simulation fin de match`};
+    const nT = fv(menager?2:3, ressenti);
+    const renfoL = {
+      titre:`Circuit complet — ${nT} passages`, icone:'💪',
+      detail:`<strong>${nT} passages · 40s / 20s récup — après le gros cardio</strong>`,
+      sousBlocs:[
+        exo('Squat sauté','⚡','<strong>40s :</strong> Les jambes sont fatiguées — c\'est voulu · Saut explosif · Réception souple','Peak de fatigue musculaire — qualité des atterrissages', 'squat_saute'),
+        exo('Pompes','💪','<strong>40s :</strong> Max de reps · Sur les genoux si besoin mais amplitude complète',''),
+        exo('Nordic Curl','🦵','<strong>6-8 reps :</strong> Chute 5s · Maintenu même en fatigue','Ischios incontournables', 'nordic_curl'),
+        exo('Gainage 360°','🔷','<strong>30s ventral + 30s latéral D + 30s latéral G :</strong> Enchaîne sans pause','Gainage complet — on finit fort'),
+      ]
+    };
+    return _build(weekIdx,'S4 — Volume max cardio + Circuit','60-65 min',ressenti,noteImpact,[echauffCourse(),cardio1,appuisS4,cardio2,renfoL,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
+  }
+
+  // ── SEMAINE 5 : Affûtage cardio + Activation ─────────────────────────────
+  const nR = fv(6, ressenti);
+  const cardio1 = {titre:`Affûtage — ${nR}×4 min`, icone:'🏃', duree:240,
+    detail:`<strong>${nR} × 4 minutes</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong><br><strong>3 min récup</strong> · Volume réduit, intensité maintenue.`,
+    note:`${Math.round(pctS*100)}% VMA · Moins de volume, même qualité`};
+  const nC = fv(6, ressenti);
+  const cardio2 = {titre:`Finisseur explosif — ${nC}×30s`, icone:'⚡', duree:30,
+    detail:`<strong>${nC} × 30 secondes</strong> à <strong>${vit(vma,pctV)} km/h (${allure(vma,pctV)}/km)</strong><br><strong>1 min 30 récup</strong> · Maintient l\'explosivité.`,
+    note:'Dernier fractionné avant la reprise — reste vif'};
+  const renfoL = {
+    titre:'Activation pré-collectif — 2 passages', icone:'⚡',
+    detail:'<strong>2 passages · 30s / 30s récup — léger et vif</strong>',
+    sousBlocs:[
+      exo('Squat sauté','⚡','<strong>30s — léger et explosif</strong>','Activation sans fatigue', 'squat_saute'),
+      exo('Pompes explosives','💪','<strong>30s :</strong> Puissance maintenue','', 'pompes_explosives'),
+      exo('Nordic Curl','🦵','<strong>5 reps :</strong> Entretien — ne lâche pas','Maintien jusqu\'au bout', 'nordic_curl'),
     ]
   };
+  return _build(weekIdx,'S5 — Affûtage + Activation pré-collectif','45-50 min',ressenti,noteImpact,[echauffCourse(),cardio1,appuisS5,cardio2,renfoL,ppp(weekIdx),retourCalme(false)]);
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// SÉANCE 3 (FACULTATIVE) — Unique chaque semaine
+// ════════════════════════════════════════════════════════════════════════════════
 export function genIndivRecup(weekIdx, joueur, ressenti='normal'){
-  const vma=joueur.vma||13;
-  const vRecup=Math.round(vma*0.65*10)/10;
-  const allure=kmhToMinKm(vRecup);
-  return {
-    titre:'Récupération Active',
-    type:'Récup', typeColor:'#22C55E', typeIcon:'🧘',
-    obligatoire:false, tags:['recup'],
-    semaine:weekIdx+1, duree:'45-50 min',
-    notePoste:null,
-    blocs:[
-      {titre:'Footing de récupération — 25-30 min', icone:'🏃', duree:27*60,
-        detail:`<strong>25 à 30 min de footing très tranquille :</strong><br>`+
-          `① Allure légère : environ <strong>${vRecup} km/h</strong> (${allure}/km) — tu dois pouvoir tenir une conversation<br>`+
-          `② Si tu n\'as vraiment pas envie de courir : marche rapide 35-40 min, même bénéfice<br>`+
-          `③ Pas d\'objectif de performance — juste faire circuler le sang`,
-        note:'💡 Pas de vélo ? Pas de piscine ? Pas de problème — le footing ou la marche suffisent largement pour une séance de récup'},
-      {titre:'Mobilité & souplesse', icone:'🤸', duree:600,
-        detail:'<strong>10 min — mouvements lents, sans forcer :</strong><br>'+
-          '① Hanches : cercles larges debout (10×/sens) · balancés de jambe avant-arrière (10×/jambe)<br>'+
-          '② Épaules : grands cercles de bras (10×/sens) · étirement bras croisé (20s/côté)<br>'+
-          '③ Chevilles : cercles (10×/pied) · flexion-extension debout (10×)<br>'+
-          '④ Dos : chat-vache au sol (10×) · torsion assise (20s/côté)',
-        note:'Relâche les tensions de la semaine'},
-      {titre:'Étirements', icone:'🧘', duree:600,
-        detail:'<strong>10 min — 30s par étirement, respiration lente :</strong><br>'+
-          '① Ischios : allongé, jambe tendue vers le plafond · 30s/jambe<br>'+
-          '② Quadriceps : allongé sur le côté, talon aux fesses · 30s/jambe<br>'+
-          '③ Mollets : debout, pied contre mur ou marche · 30s/jambe<br>'+
-          '④ Adducteurs : en papillon, pousse doucement les genoux · 30s<br>'+
-          '⑤ Épaules : bras croisé sur la poitrine · 20s/côté',
-        note:'Sans à-coups, sensation de tension seulement'},
-    ]
-  };
+  const vma   = joueur.vma||13;
+  const adapt  = getProfilAdapt(joueur);
+  const gr    = getGroupe(vma);
+  const si    = adapt.sansImpact;
+  const p     = getPPP_niveauxIndiv(weekIdx);
+  const pppA  = {titre:'🛡️ Prévention essentielle', icone:'🛡️', isPPP:true,
+    pppExos:p.exos?p.exos.slice(0,3):[],
+    note:'Version allégée — les 3 exercices de base'};
+
+  const etirLong = {titre:'Étirements longs', icone:'🧘', duree:720,
+    detail:'<strong>12 min — prends le temps :</strong><br>'+
+      '① Ischios : assis jambes tendues · <strong>1 min/jambe</strong><br>'+
+      '② Quadriceps : allongé côté · <strong>1 min/jambe</strong><br>'+
+      '③ Fessiers : genou sur la poitrine · <strong>1 min/jambe</strong><br>'+
+      '④ Mollets : pied contre mur · <strong>45s/jambe</strong><br>'+
+      '⑤ Adducteurs : papillon assis · <strong>1 min 30</strong><br>'+
+      '⑥ Dos : chat-vache 10× · torsion 30s/côté',
+    note:'Séance récup = étirements longs = meilleure récupération musculaire'};
+
+  // S1 : Mobilité articulaire complète
+  if(weekIdx===0){
+    const mobilite = {titre:'Mobilité articulaire — corps complet', icone:'🤸', duree:900,
+      detail:'<strong>15 min — travail mobilité :</strong><br>'+
+        '① <strong>Chevilles :</strong> cercles 20×/sens · dorsiflexion contre mur 30s/pied · 3×<br>'+
+        '② <strong>Hanches :</strong> rotations externes 15× · fente basse maintenue 45s/côté · 3×<br>'+
+        '③ <strong>Colonne :</strong> chat-vache 15× · torsion thoracique assise 30s/côté · 3×<br>'+
+        '④ <strong>Épaules :</strong> cercles bras 20× · étirement pectoral contre mur 30s/côté<br>'+
+        '⑤ <strong>Genoux :</strong> cercles 15×/sens · squats lents profonds 10×',
+      note:'La mobilité articulaire c\'est souvent ce qui manque — investis ce temps'};
+    return _buildRecup(weekIdx,'S1 Facultative — Mobilité complète','35 min',[mobilite,pppA,etirLong]);
+  }
+
+  // S2 : Footing récup + PPP complète
+  if(weekIdx===1){
+    const vRecup = Math.round(vma*0.58*10)/10;
+    const footing = {titre:'Footing récupération — 20 min', icone:'🚶', duree:1200,
+      detail:`<strong>20 minutes</strong> à <strong>${vRecup} km/h</strong> — allure très légère.<br>`+
+        (si?'Marche rapide si course inconfortable.':'Tu dois pouvoir chanter en courant. C\'est une séance de récupération.'),
+      note:`${Math.round(0.58*100)}% VMA · Circulation du sang, pas d\'effort`};
+    const pppFull = {titre:'🛡️ PPP complète', icone:'🛡️', isPPP:true,
+      pppExos:p.exos, note:'Toute la PPP — tu as le temps ce jour-là'};
+    return _buildRecup(weekIdx,'S2 Facultative — Footing récup + PPP','40 min',[footing,pppFull,etirLong]);
+  }
+
+  // S3 : Fractionné léger + Mobilité
+  if(weekIdx===2){
+    const vFrac = Math.round(vma*0.70*10)/10;
+    const frac = {titre:'Fractionné léger — 15×30s/30s', icone:'🏃', duree:30,
+      detail:`<strong>15 × 30 secondes</strong> à <strong>${vFrac} km/h</strong><br><strong>30s récup</strong> · Allure modérée — pas d\'effort maximal.<br>Maintenir les adaptations cardiovasculaires sans se fatiguer.`,
+      note:'70% VMA · Léger et régulier — pas de sprint'};
+    const mobilite = {titre:'Mobilité ciblée jambes', icone:'🤸', duree:600,
+      detail:'<strong>10 min :</strong><br>'+
+        '① Fente basse maintenue <strong>1 min/côté</strong> × 2<br>'+
+        '② Papillon assis · penche le buste en avant · <strong>1 min 30</strong><br>'+
+        '③ Pigeon au sol · <strong>1 min/côté</strong> × 2<br>'+
+        '④ Rotation externe de hanche debout · 10×/sens',
+      note:'Les hanches sont souvent le maillon faible — travaille-les'};
+    return _buildRecup(weekIdx,'S3 Facultative — Fractionné léger + Mobilité','35 min',[echauffCourse(),frac,mobilite,pppA,etirLong]);
+  }
+
+  // S4 : Récupération active pure
+  if(weekIdx===3){
+    const vRecup = Math.round(vma*0.58*10)/10;
+    const footing = {titre:'Récupération active — 25 min', icone:'🚶', duree:1500,
+      detail:`<strong>25 minutes</strong> à <strong>${vRecup} km/h</strong> — allure très légère.<br>`+
+        (si?'Marche rapide ou vélo.':'Footing très tranquille — allure conversation fluide.'),
+      note:'Après le pic de charge S4 — le corps a besoin de cette récupération'};
+    return _buildRecup(weekIdx,'S4 Facultative — Récupération active','45 min',[footing,pppA,etirLong]);
+  }
+
+  // S5 : Activation pré-collectif
+  const activation = {titre:'Activation pré-collectif — 15 min', icone:'⚡', duree:900,
+    detail:'<strong>15 min — léger et vif :</strong><br>'+
+      '① <strong>5 min footing</strong> très léger<br>'+
+      '② <strong>Gammes :</strong> montées genoux · talons-fesses · pas chassés · foulées bondissantes · 2×20m<br>'+
+      '③ <strong>6 démarrages explosifs</strong> 5m · stop net · retour<br>'+
+      '④ <strong>4×20m shuffles latéraux</strong> · 30s récup<br>'+
+      '⑤ <strong>4×20m carioca</strong> · 30s récup',
+    note:'Activation légère — arriver frais, réactif et confiant au collectif'};
+  return _buildRecup(weekIdx,'S5 Facultative — Activation pré-collectif','30 min',[activation,pppA,etirLong]);
 }
+
+// ── Helper assemblage ─────────────────────────────────────────────────────────
+function _build(weekIdx, titre, duree, ressenti, notePoste, blocs){
+  return {titre, type:'Séance 1 — Renfo + Cardio', typeIcon:'💪⚡',
+    obligatoire:true, tags:['renfo','cardio','ppp'],
+    semaine:weekIdx+1, duree, ressenti, notePoste,
+    blocs:blocs.filter(Boolean)};
+}
+function _buildRecup(weekIdx, titre, duree, blocs){
+  return {titre, type:'Séance 3 — Récupération', typeIcon:'🚶',
+    obligatoire:false, tags:['recup','ppp'],
+    semaine:weekIdx+1, duree,
+    blocs:blocs.filter(Boolean)};
+}
+
 
 export function genPhase2IndivSessions(weekIdx, joueur, ressenti='normal', materiel='auto'){
   // Résoudre le matériel : 'auto' = utiliser le profil joueur

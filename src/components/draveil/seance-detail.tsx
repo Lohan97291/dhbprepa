@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
 import { GuidedMode, exoToStep, blocToStep, seanceToSteps } from "./guided-mode";
+import { RpeSurvey, type RpeResult } from "./rpe-survey";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
 interface Exo {
@@ -110,6 +111,7 @@ export function SeanceDetailSheet({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(!!alreadyValidated);
   const [globalGuided, setGlobalGuided] = useState(false);
+  const [showRpe, setShowRpe] = useState(false);
 
   const showPre = !!regenerator && !readOnly && !alreadyValidated;
   const [prePhase, setPrePhase] = useState<boolean>(showPre);
@@ -352,6 +354,16 @@ export function SeanceDetailSheet({
               ) : null;
             })()}
 
+            {showRpe && (
+              <RpeSurvey
+                dureeMin={Math.round((activeSeance?.blocs?.reduce((acc,b)=>acc+(b.duree||0),0)||3000)/60)}
+                onClose={(result) => {
+                  setShowRpe(false);
+                  validate(false, result.rpe, result.ressenti);
+                }}
+              />
+            )}
+
             {globalGuided && (
               <GuidedMode
                 titre={activeSeance.titre}
@@ -367,58 +379,22 @@ export function SeanceDetailSheet({
             </div>
 
             {readOnly ? null : !saved ? (
-              <div className="mt-6 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Valider la séance
-                </div>
-                <div className="mb-3 text-xs text-muted-foreground">
-                  Difficulté ressentie (RPE)
-                </div>
-                <div className="mb-4 flex items-center gap-1.5">
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setRpe(n)}
-                      className={`h-9 flex-1 rounded-lg text-xs font-bold transition ${
-                        rpe >= n
-                          ? "text-white shadow-brand"
-                          : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
-                      }`}
-                      style={
-                        rpe >= n
-                          ? {
-                              background: `linear-gradient(180deg, hsl(${140 - n * 12} 70% 45%), hsl(${140 - n * 12} 70% 38%))`,
-                            }
-                          : undefined
-                      }
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  value={ressentiText}
-                  onChange={(e) => setRessentiText(e.target.value)}
-                  placeholder="Ressenti, sensations (optionnel)"
-                  className="w-full resize-none rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[color:var(--draveil)] focus:outline-none"
-                  rows={2}
-                />
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => validate(true)}
-                    disabled={saving}
-                    className="flex-1 rounded-xl border border-white/8 bg-white/[0.02] py-3 text-sm font-medium text-muted-foreground transition hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
-                  >
-                    Séance manquée
-                  </button>
-                  <button
-                    onClick={() => validate(false)}
-                    disabled={saving || rpe === 0}
-                    className="flex-[2] rounded-xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition hover:brightness-110 disabled:opacity-40"
-                  >
-                    {saving ? "Enregistrement…" : "Valider la séance"}
-                  </button>
-                </div>
+              <div className="mt-6 space-y-3">
+                {/* Bouton validation principal → ouvre le sondage RPE */}
+                <button
+                  onClick={() => setShowRpe(true)}
+                  disabled={saving}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-4 text-sm font-bold text-white shadow-brand transition active:scale-[0.98] disabled:opacity-40"
+                >
+                  ✅ J'ai fait ma séance — Valider
+                </button>
+                <button
+                  onClick={() => validate(true)}
+                  disabled={saving}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] py-3 text-sm font-medium text-muted-foreground transition hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
+                >
+                  ❌ Séance manquée
+                </button>
               </div>
             ) : (
               <motion.div
@@ -549,10 +525,28 @@ function BlocCard({
                   {k + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-foreground">
-                    {s.icone ? `${s.icone} ` : ""}
-                    {s.titre}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-foreground">
+                      {s.icone ? `${s.icone} ` : ""}
+                      {s.titre}
+                    </span>
+                    {(s as Bloc).videoUrl && (
+                      <a
+                        href={(s as Bloc).videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 hover:bg-red-500/25 transition"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        ▶ Vidéo
+                      </a>
+                    )}
                   </div>
+                  {(s as Bloc).variante && (
+                    <div className="mt-1 rounded-xl border border-yellow-500/20 bg-yellow-500/[0.06] px-3 py-1.5 text-[11px] text-yellow-400/90">
+                      💡 Variante : {(s as Bloc).variante}
+                    </div>
+                  )}
                   {s.detail && (
                     <div
                       className="mt-1.5 text-[13px] leading-relaxed text-foreground/80 [&_strong]:font-semibold [&_strong]:text-foreground"
