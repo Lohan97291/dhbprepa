@@ -10,6 +10,18 @@ import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
 
+/** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
+interface Exo {
+  nom?: string;
+  detail?: string;
+  note?: string;
+  n?: string;
+  d?: string;
+}
+
+const exoNom = (e: Exo) => e.nom ?? e.n ?? "";
+const exoDetail = (e: Exo) => e.detail ?? e.d ?? "";
+
 interface Bloc {
   titre: string;
   detail?: string;
@@ -17,7 +29,9 @@ interface Bloc {
   icone?: string;
   duree?: number;
   isPPP?: boolean;
-  pppExos?: Array<{ nom: string; detail?: string }>;
+  pppExos?: Exo[];
+  /** Exercices du circuit, affiches etape par etape. */
+  sousBlocs?: Bloc[];
 }
 
 // Structural shape of a generated session (matches core.ts return values).
@@ -323,42 +337,7 @@ export function SeanceDetailSheet({
 
             <div className="space-y-3">
               {(activeSeance.blocs ?? []).map((b, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-white/8 bg-white/[0.025] p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-xl">{b.icone ?? "•"}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-foreground">
-                        {b.titre}
-                      </div>
-                      {b.detail && (
-                        <div
-                          className="mt-2 text-sm leading-relaxed text-foreground/85 [&_strong]:font-semibold [&_strong]:text-foreground"
-                          dangerouslySetInnerHTML={{ __html: b.detail }}
-                        />
-                      )}
-                      {b.isPPP && b.pppExos && (
-                        <ul className="mt-2 space-y-1 text-sm text-foreground/85">
-                          {b.pppExos.map((e, k) => (
-                            <li key={k}>
-                              <span className="font-semibold text-foreground">
-                                {e.nom}
-                              </span>
-                              {e.detail ? ` — ${e.detail}` : ""}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {b.note && (
-                        <div className="mt-2 text-xs italic text-muted-foreground">
-                          {b.note}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <BlocCard key={i} bloc={b} index={i} readOnly={readOnly} />
               ))}
             </div>
 
@@ -430,5 +409,154 @@ export function SeanceDetailSheet({
         )}
       </motion.div>
     </AnimatePresence>
+  );
+}
+/** Formate une duree en secondes vers "10 min" ou "45 s". */
+function fmtDuree(sec: number): string {
+  if (sec >= 60) {
+    const m = Math.round(sec / 60);
+    return `${m} min`;
+  }
+  return `${sec} s`;
+}
+
+/**
+ * Carte d'un bloc de seance.
+ * Affiche le detail, un chrono si le bloc a une duree,
+ * puis les exercices etape par etape (circuit ou PPP).
+ */
+function BlocCard({
+  bloc,
+  index,
+  readOnly,
+}: {
+  bloc: Bloc;
+  index: number;
+  readOnly?: boolean;
+}) {
+  const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
+  const steps: Bloc[] = bloc.sousBlocs ?? [];
+
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+      {/* En-tete */}
+      <div className="flex items-start gap-3">
+        <div className="text-xl">{bloc.icone ?? "•"}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Bloc {index + 1}
+            </span>
+            {bloc.duree ? (
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-foreground/70">
+                {fmtDuree(bloc.duree)}
+              </span>
+            ) : null}
+          </div>
+          <div className="mt-0.5 font-semibold text-foreground">
+            {bloc.titre}
+          </div>
+
+          {bloc.detail && (
+            <div
+              className="mt-2 text-sm leading-relaxed text-foreground/85 [&_strong]:font-semibold [&_strong]:text-foreground"
+              dangerouslySetInnerHTML={{ __html: bloc.detail }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Chrono du bloc */}
+      {!readOnly && bloc.duree ? (
+        <div className="mt-3">
+          <InlineTimer
+            reps={1}
+            effortSec={bloc.duree}
+            recupSec={0}
+            label={bloc.titre}
+          />
+        </div>
+      ) : null}
+
+      {/* Exercices du circuit, etape par etape */}
+      {steps.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
+            Les {steps.length} exercices du circuit
+          </div>
+          {steps.map((s, k) => (
+            <div
+              key={k}
+              className="rounded-xl border border-white/8 bg-white/[0.04] p-3"
+            >
+              <div className="flex items-start gap-2.5">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[11px] font-black text-[color:var(--draveil-glow)]">
+                  {k + 1}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-foreground">
+                    {s.icone ? `${s.icone} ` : ""}
+                    {s.titre}
+                  </div>
+                  {s.detail && (
+                    <div
+                      className="mt-1.5 text-[13px] leading-relaxed text-foreground/80 [&_strong]:font-semibold [&_strong]:text-foreground"
+                      dangerouslySetInnerHTML={{ __html: s.detail }}
+                    />
+                  )}
+                  {s.note && (
+                    <div className="mt-1.5 text-[11px] italic text-muted-foreground">
+                      {s.note}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Exercices de prevention (PPP) */}
+      {exos.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
+            Les {exos.length} exercices
+          </div>
+          {exos.map((e, k) => (
+            <div
+              key={k}
+              className="rounded-xl border border-white/8 bg-white/[0.04] p-3"
+            >
+              <div className="flex items-start gap-2.5">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[11px] font-black text-[color:var(--draveil-glow)]">
+                  {k + 1}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-foreground">
+                    {exoNom(e)}
+                  </div>
+                  {exoDetail(e) && (
+                    <div className="mt-1 text-[13px] leading-relaxed text-foreground/80">
+                      {exoDetail(e)}
+                    </div>
+                  )}
+                  {e.note && (
+                    <div className="mt-1.5 text-[11px] italic text-muted-foreground">
+                      {e.note}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {bloc.note && (
+        <div className="mt-3 text-xs italic text-muted-foreground">
+          {bloc.note}
+        </div>
+      )}
+    </div>
   );
 }
