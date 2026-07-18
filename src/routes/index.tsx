@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import { DhbMark } from "@/components/draveil/logo";
+import { PinInput } from "@/components/draveil/pin-input";
 import { GlassCard } from "@/components/draveil/glass-card";
 import { COACHES } from "@/lib/draveil/coaches";
 import { session } from "@/lib/draveil/session";
@@ -244,16 +245,22 @@ function CoachLoginSheet({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const coach = COACHES.lohan;
 
-  async function submit() {
+  async function submit(code?: string) {
+    const entered = (code ?? pwd).trim();
+    if (entered.length < 4) return;
     setLoading(true);
     const stored = await sbGetMeta<string | null>(
       "coach_pwd_" + coach.id,
       null,
     );
-    const valid = stored || coach.defPwd;
+    const valid =
+      stored && /^\d{4}$/.test(String(stored))
+        ? String(stored)
+        : coach.defPwd;
     setLoading(false);
-    if (pwd.trim().toUpperCase() !== valid) {
-      toast.error("Mot de passe incorrect");
+    if (entered !== valid) {
+      toast.error("Code incorrect");
+      setPwd("");
       return;
     }
     session.setCoach({
@@ -293,14 +300,14 @@ function CoachLoginSheet({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
-        <input
+        <div className="mb-3 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Code PIN
+        </div>
+        <PinInput
           autoFocus
-          type="password"
           value={pwd}
-          onChange={(e) => setPwd(e.target.value.toUpperCase())}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Mot de passe"
-          className="w-full rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3.5 tracking-[0.3em] text-foreground outline-none focus:border-[color:var(--draveil)]/60 transition"
+          onChange={setPwd}
+          onComplete={(v) => submit(v)}
         />
         <div className="mt-4 flex gap-2">
           <button
@@ -310,9 +317,9 @@ function CoachLoginSheet({ onClose }: { onClose: () => void }) {
             Annuler
           </button>
           <button
-            onClick={submit}
-            disabled={loading}
-            className="flex-1 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand disabled:opacity-60"
+            onClick={() => submit()}
+            disabled={loading || pwd.length < 4}
+            className="flex-1 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand disabled:opacity-40"
           >
             Connexion →
           </button>

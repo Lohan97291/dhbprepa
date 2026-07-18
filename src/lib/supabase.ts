@@ -65,6 +65,46 @@ export async function sbSaveJoueur(j: Joueur): Promise<void> {
   );
 }
 
+/**
+ * Change le code de connexion d'un joueur.
+ * Le code etant la cle primaire, on recree la ligne puis on supprime l'ancienne.
+ */
+export async function sbChangeCode(
+  oldCode: string,
+  newCode: string,
+): Promise<{ ok: boolean; error?: string; joueur?: Joueur }> {
+  const from = oldCode.trim().toUpperCase();
+  const to = newCode.trim().toUpperCase();
+
+  if (!/^[A-Z0-9]{3,12}$/.test(to)) {
+    return { ok: false, error: "Le code doit faire 3 a 12 caracteres (lettres et chiffres)." };
+  }
+  if (from === to) {
+    return { ok: false, error: "C'est deja ton code actuel." };
+  }
+
+  const taken = await sbGetJoueur(to);
+  if (taken) {
+    return { ok: false, error: "Ce code est deja utilise, choisis-en un autre." };
+  }
+
+  const current = await sbGetJoueur(from);
+  if (!current) {
+    return { ok: false, error: "Compte introuvable." };
+  }
+
+  const updated: Joueur = { ...current, code: to };
+  await sbSaveJoueur(updated);
+
+  const check = await sbGetJoueur(to);
+  if (!check) {
+    return { ok: false, error: "Erreur lors de la creation du nouveau code." };
+  }
+
+  await sbDeleteJoueur(from);
+  return { ok: true, joueur: updated };
+}
+
 export async function sbDeleteJoueur(code: string): Promise<void> {
   await supabase.from("joueurs").delete().eq("code", code.toUpperCase());
 }

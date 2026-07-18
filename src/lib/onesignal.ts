@@ -42,3 +42,13 @@ export async function sendOneSignalNotif({
     body: JSON.stringify({ title, body, target, user_code: userCode }),
   });
 }
+
+/** Met a jour l'identifiant OneSignal apres un changement de code joueur. */
+export async function updateOneSignalCode(newCode: string) {
+  try {
+    await OneSignal.login(newCode);
+    await OneSignal.User.addTag("code", newCode);
+  } catch {
+    /* ignore */
+  }
+}
