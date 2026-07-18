@@ -7,6 +7,8 @@ import { InlineTimer } from "./inline-timer";
 export interface GuidedStep {
   titre: string;
   icone?: string;
+  /** Bloc d'origine (Echauffement, Circuit, Prevention...) affiche au-dessus du titre. */
+  groupe?: string;
   dosage?: string;
   detailHtml?: string;
   exec?: string[];
@@ -25,8 +27,9 @@ export function exoToStep(e: {
   detail?: string; d?: string;
   note?: string; erreur?: string; exec?: string[];
   series?: number; duree?: number; reps?: number; recup?: number; cote?: boolean;
-}): GuidedStep {
+}, groupe?: string): GuidedStep {
   return {
+    groupe,
     titre: e.nom ?? e.n ?? "",
     dosage: e.detail ?? e.d,
     exec: e.exec,
@@ -43,8 +46,9 @@ export function exoToStep(e: {
 /** Convertit un exercice de circuit (titre/detail HTML) en etape guidee. */
 export function blocToStep(b: {
   titre: string; icone?: string; detail?: string; note?: string; duree?: number;
-}): GuidedStep {
+}, groupe?: string): GuidedStep {
   return {
+    groupe,
     titre: b.titre,
     icone: b.icone,
     detailHtml: b.detail,
@@ -52,6 +56,62 @@ export function blocToStep(b: {
     duree: b.duree,
     series: b.duree ? 1 : undefined,
   };
+}
+
+interface BlocLike {
+  titre: string;
+  detail?: string;
+  note?: string;
+  icone?: string;
+  duree?: number;
+  isPPP?: boolean;
+  pppExos?: Array<Record<string, unknown>>;
+  sousBlocs?: Array<{
+    titre: string;
+    icone?: string;
+    detail?: string;
+    note?: string;
+    duree?: number;
+  }>;
+}
+
+/**
+ * Transforme une seance complete en une liste d'etapes,
+ * dans l'ordre : echauffement -> circuit -> prevention -> etirements.
+ */
+export function seanceToSteps(blocs: BlocLike[] | undefined): GuidedStep[] {
+  const out: GuidedStep[] = [];
+
+  for (const b of blocs ?? []) {
+    const aDesExos =
+      (b.sousBlocs && b.sousBlocs.length > 0) ||
+      (b.isPPP && b.pppExos && b.pppExos.length > 0);
+
+    // Bloc simple (echauffement, etirements, nordic...) : une seule etape.
+    if (!aDesExos) {
+      out.push(blocToStep(b));
+      continue;
+    }
+
+    // Consigne du bloc (nombre de passages, recup...) avant ses exercices.
+    if (b.detail && b.detail.trim()) {
+      out.push({
+        titre: b.titre,
+        icone: b.icone,
+        detailHtml: b.detail,
+        note: b.note,
+      });
+    }
+
+    if (b.sousBlocs?.length) {
+      for (const sb of b.sousBlocs) out.push(blocToStep(sb, b.titre));
+    }
+    if (b.isPPP && b.pppExos?.length) {
+      for (const e of b.pppExos) out.push(exoToStep(e as never, b.titre));
+    }
+  }
+
+  return out;
 }
 
 /**
@@ -125,7 +185,7 @@ export function GuidedMode({
           ))}
         </div>
         <div className="mt-2 text-[11px] font-semibold text-muted-foreground">
-          Exercice {i + 1} sur {steps.length}
+          Étape {i + 1} sur {steps.length}
         </div>
       </div>
 
@@ -144,6 +204,11 @@ export function GuidedMode({
                 {step.icone ?? i + 1}
               </div>
               <div className="min-w-0 flex-1">
+                {step.groupe && (
+                  <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
+                    {step.groupe}
+                  </div>
+                )}
                 <h2 className="font-display text-xl font-black leading-tight tracking-tight text-foreground">
                   {step.titre}
                 </h2>

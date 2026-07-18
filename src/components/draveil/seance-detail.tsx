@@ -9,7 +9,7 @@ import { successPing, haptic } from "@/lib/draveil/haptic";
 import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
-import { GuidedMode, exoToStep, blocToStep } from "./guided-mode";
+import { GuidedMode, exoToStep, blocToStep, seanceToSteps } from "./guided-mode";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
 interface Exo {
@@ -109,6 +109,7 @@ export function SeanceDetailSheet({
   const [ressentiText, setRessentiText] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(!!alreadyValidated);
+  const [globalGuided, setGlobalGuided] = useState(false);
 
   const showPre = !!regenerator && !readOnly && !alreadyValidated;
   const [prePhase, setPrePhase] = useState<boolean>(showPre);
@@ -339,10 +340,24 @@ export function SeanceDetailSheet({
               )}
             </div>
 
-            {!readOnly && (
-              <div className="mb-4">
-                <InlineTimer reps={6} effortSec={120} recupSec={60} />
-              </div>
+            {!readOnly && (() => {
+              const allSteps = seanceToSteps(activeSeance.blocs);
+              return allSteps.length > 0 ? (
+                <button
+                  onClick={() => setGlobalGuided(true)}
+                  className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+                >
+                  ▶ Commencer la séance guidée · {allSteps.length} étapes
+                </button>
+              ) : null;
+            })()}
+
+            {globalGuided && (
+              <GuidedMode
+                titre={activeSeance.titre}
+                steps={seanceToSteps(activeSeance.blocs)}
+                onClose={() => setGlobalGuided(false)}
+              />
             )}
 
             <div className="space-y-3">
