@@ -11,6 +11,7 @@ import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
 import { GuidedMode, exoToStep, blocToStep, seanceToSteps } from "./guided-mode";
 import { RpeSurvey, type RpeResult } from "./rpe-survey";
+import { CircuitTimer, type CircuitExo } from "./circuit-timer";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
 interface Exo {
@@ -438,6 +439,17 @@ function BlocCard({
   const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
   const steps: Bloc[] = bloc.sousBlocs ?? [];
   const [guided, setGuided] = useState(false);
+  const [showCircuit, setShowCircuit] = useState(false);
+
+  // Nombre de passages extrait du titre (ex: "Circuit Réveil — 3 passages")
+  const passagesMatch = bloc.titre?.match(/(\d+)\s*passage/i);
+  const nbPassages = passagesMatch ? parseInt(passagesMatch[1]) : 3;
+
+  // Durées selon le titre de la séance (30/30 par défaut)
+  const effortMatch = bloc.detail?.match(/(\d+)s effort/);
+  const recupMatch  = bloc.detail?.match(/(\d+)s récup/);
+  const effortSec = effortMatch ? parseInt(effortMatch[1]) : 30;
+  const recupSec  = recupMatch  ? parseInt(recupMatch[1])  : 30;
 
   // Le mode guide s'appuie sur les exercices du bloc (circuit ou prevention).
   const guidedSteps =
@@ -508,6 +520,29 @@ function BlocCard({
           />
         </div>
       ) : null}
+
+      {/* Bouton lancer le circuit */}
+      {!readOnly && steps.length > 0 && (
+        <button
+          onClick={() => setShowCircuit(true)}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+        >
+          ▶ Lancer le circuit guidé · {nbPassages} passages
+        </button>
+      )}
+
+      {/* CircuitTimer overlay */}
+      {showCircuit && steps.length > 0 && (
+        <CircuitTimer
+          titre={bloc.titre}
+          exercices={steps as CircuitExo[]}
+          effortSec={effortSec}
+          recupSec={recupSec}
+          recupPassageSec={90}
+          passages={nbPassages}
+          onClose={() => setShowCircuit(false)}
+        />
+      )}
 
       {/* Exercices du circuit, etape par etape */}
       {steps.length > 0 && (

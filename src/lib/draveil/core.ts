@@ -1229,7 +1229,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
     const nT = fv(menager?2:3, ressenti);
     const renfo = {
       titre:`Circuit Réveil — ${nT} passages · 40s/20s`, icone:'💪',
-      detail:`<strong>${nT} passages · 40s effort · 20s récup · 90s récup entre passages</strong><br>Mets-toi dedans dès la première répétition — c'est une reprise sérieuse.`,
+      detail:`<strong>${nT} passages · 30s effort · 30s récup · 90s récup entre passages</strong><br>Sur chaque exercice : 30 secondes à fond, 30 secondes de récup, puis exercice suivant. Quand tous les exercices sont faits : 90s récup et tu recommences.`,
       sousBlocs:[
         exo('Squat poids du corps','🦵',
           '<strong>40s — max de reps :</strong><br>① Pieds largeur épaules, pointes vers l\'extérieur<br>② Descente lente <strong>3s</strong> cuisses parallèles, genoux dans l\'axe<br>③ Remontée explosive en poussant dans les talons<br>④ Dos droit, regard devant',
@@ -1374,7 +1374,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
   const nT = fv(menager?2:3, ressenti);
   const renfo = {
     titre:`Circuit Affûtage — ${nT} passages · 30s/30s`, icone:'⚡',
-    detail:`<strong>${nT} passages · 30s max · 30s récup — vitesse et puissance, pas volume</strong><br>Objectif : rester explosif et frais pour le collectif.`,
+    detail:`<strong>${nT} passages · 30s effort · 30s récup — explosivité et fraîcheur</strong><br>30 secondes à fond, 30 secondes de récup. Objectif : rester explosif et frais pour le collectif.`,
     sousBlocs:[
       exo('Squat sauté explosif','⚡','<strong>30s — saut maximum :</strong><br>Squat + saut le plus haut · Réception souple','Qualité des sauts — pas de volume', 'squat_saute'),
       exo('Pompes explosives','💪','<strong>30s — puissance pectoraux :</strong><br>Remontée explosive, mains qui décollent si possible','Explosivité pure', 'pompes_explosives'),
