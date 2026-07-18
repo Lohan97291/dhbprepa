@@ -846,28 +846,176 @@ export function updateTimerDisplay(){
 // Prévention blessures (PPP) — 3 niveaux progressifs (source: fichier de référence)
 export function getPPP_niveaux(weekIdx){
   // weekIdx 0-1 = niveau 1, 2-3 = niveau 2, 4 = niveau 3
+  // Chaque exo : n=nom, d=dosage, note=conseil cle, exec=etapes d'execution,
+  // erreur=erreur classique, series/duree/reps = donnees pour le chrono guide.
   const niv = weekIdx<=1?1:weekIdx<=3?2:3;
   const ppps = {
     1:[
-      {n:'Équilibre sur une jambe',             d:'3×30s/pied — yeux ouverts puis fermés',          note:'Genou légèrement fléchi, bassin stable'},
-      {n:'Gainage ventral',                      d:'3×40s',                                           note:'Dos plat, bassin neutre, respiration continue'},
-      {n:'Gainage latéral',                      d:'3×30s/côté',                                      note:'Corps aligné, hanche haute'},
-      {n:'Proprioception genou',                 d:'2×30s/jambe — balancier de la jambe libre',       note:'Le genou d\'appui reste aligné avec le pied'},
-      {n:'Rotation externe épaule ⭐',            d:'3×15/bras avec élastique léger (ou partenaire)', note:'Protège l\'épaule du lanceur'},
+      {n:'Équilibre sur une jambe', d:'3×30s/pied — yeux ouverts puis fermés',
+       note:'Genou légèrement fléchi, bassin stable',
+       series:3, duree:30, cote:true,
+       exec:[
+         'Tiens-toi sur une jambe, genou légèrement fléchi (jamais verrouillé)',
+         'Bassin bien horizontal, regard fixé sur un point devant toi',
+         'Tiens 30 secondes, puis recommence les yeux fermés',
+         'Change de pied et répète'
+       ],
+       erreur:'Genou tendu et bloqué — il doit rester souple pour absorber les déséquilibres'},
+
+      {n:'Gainage ventral', d:'3×40s',
+       note:'Dos plat, bassin neutre, respiration continue',
+       series:3, duree:40, recup:30,
+       exec:[
+         'En appui sur les avant-bras et la pointe des pieds',
+         'Coudes à l\'aplomb des épaules, corps aligné de la tête aux talons',
+         'Serre les abdos et les fessiers, respire normalement',
+         'Tiens 40 secondes, récupère 30 secondes entre les séries'
+       ],
+       erreur:'Bassin qui s\'affaisse ou fesses trop hautes — garde le dos parfaitement plat'},
+
+      {n:'Gainage latéral', d:'3×30s/côté',
+       note:'Corps aligné, hanche haute',
+       series:3, duree:30, cote:true, recup:30,
+       exec:[
+         'Allongé sur le côté, en appui sur l\'avant-bras, coude sous l\'épaule',
+         'Décolle le bassin : le corps forme une ligne droite',
+         'Garde la hanche haute pendant toute la série',
+         'Tiens 30 secondes de chaque côté'
+       ],
+       erreur:'Bassin qui redescend en cours de série — mieux vaut arrêter net que tenir mal'},
+
+      {n:'Proprioception genou', d:'2×30s/jambe — balancier de la jambe libre',
+       note:'Le genou d\'appui reste aligné avec le pied',
+       series:2, duree:30, cote:true,
+       exec:[
+         'En équilibre sur une jambe, genou d\'appui légèrement fléchi',
+         'Balance lentement la jambe libre d\'avant en arrière',
+         'Le genou d\'appui reste aligné avec la pointe du pied',
+         '30 secondes par jambe'
+       ],
+       erreur:'Genou qui part vers l\'intérieur — c\'est exactement le mouvement à éviter'},
+
+      {n:'Rotation externe épaule ⭐', d:'3×15/bras avec élastique léger (ou partenaire)',
+       note:'Protège l\'épaule du lanceur',
+       series:3, reps:15, cote:true,
+       exec:[
+         'Coude collé au corps et plié à 90°, élastique dans la main',
+         'Tourne l\'avant-bras vers l\'extérieur, coude toujours collé',
+         'Reviens lentement en 3 secondes, en contrôlant',
+         '15 répétitions par bras'
+       ],
+       erreur:'Coude qui décolle du corps — cale une serviette roulée sous le bras pour le sentir'},
     ],
     2:[
-      {n:'Équilibre sur une jambe (dynamique)',  d:'3×45s/pied — bouge les bras pour te déstabiliser', note:'Fixe un point au mur pour garder l\'équilibre'},
-      {n:'Gainage ventral dynamique',            d:'3×45s avec élévations alternées bras/jambe',       note:'Dos plat absolu — la qualité prime sur la durée'},
-      {n:'Gainage latéral dynamique',            d:'3×40s/côté — monte/descends le bassin lentement',  note:'Bassin stable, corps aligné'},
-      {n:'Sauts sur une jambe ⭐',               d:'3×6 sauts/jambe — stabilise 2s à la réception',   note:'Contrôle le genou à la réception'},
-      {n:'Rotation externe épaule (freinage)',   d:'3×12/bras — descente lente 4 secondes',           note:'Descente lente — prévient la tendinite'},
+      {n:'Équilibre sur une jambe (dynamique)', d:'3×45s/pied — bouge les bras pour te déstabiliser',
+       note:'Fixe un point au mur pour garder l\'équilibre',
+       series:3, duree:45, cote:true,
+       exec:[
+         'En équilibre sur une jambe, genou souple',
+         'Bouge les bras dans tous les sens pour te déstabiliser volontairement',
+         'Résiste et reviens toujours à la position stable',
+         '45 secondes par pied'
+       ],
+       erreur:'Poser le pied dès que ça vacille — c\'est justement le rattrapage qui fait progresser'},
+
+      {n:'Gainage ventral dynamique', d:'3×45s avec élévations alternées bras/jambe',
+       note:'Dos plat absolu — la qualité prime sur la durée',
+       series:3, duree:45, recup:30,
+       exec:[
+         'Position de gainage ventral classique',
+         'Décolle un bras 2 secondes, repose, puis la jambe opposée 2 secondes',
+         'Alterne sans jamais laisser le bassin tourner',
+         '45 secondes par série'
+       ],
+       erreur:'Bassin qui bascule à chaque élévation — ralentis et réduis l\'amplitude'},
+
+      {n:'Gainage latéral dynamique', d:'3×40s/côté — monte/descends le bassin lentement',
+       note:'Bassin stable, corps aligné',
+       series:3, duree:40, cote:true, recup:30,
+       exec:[
+         'Position de gainage latéral, coude sous l\'épaule',
+         'Descends le bassin lentement vers le sol sans jamais le poser',
+         'Remonte en poussant sur l\'appui, corps toujours aligné',
+         '40 secondes par côté'
+       ],
+       erreur:'Aller trop vite — le mouvement doit être lent et contrôlé'},
+
+      {n:'Sauts sur une jambe ⭐', d:'3×6 sauts/jambe — stabilise 2s à la réception',
+       note:'Contrôle le genou à la réception',
+       series:3, reps:6, cote:true,
+       exec:[
+         'Sur une jambe, saute vers l\'avant',
+         'À la réception, stabilise 2 secondes avant le saut suivant',
+         'Genou fléchi et aligné avec la pointe du pied',
+         '6 sauts puis change de jambe'
+       ],
+       erreur:'Réception jambe tendue ou genou rentrant — c\'est le mécanisme n°1 de l\'entorse'},
+
+      {n:'Rotation externe épaule (freinage)', d:'3×12/bras — descente lente 4 secondes',
+       note:'Descente lente — prévient la tendinite',
+       series:3, reps:12, cote:true,
+       exec:[
+         'Coude collé au corps et plié à 90°, élastique tendu',
+         'Tourne l\'avant-bras vers l\'extérieur à vitesse normale',
+         'Reviens très lentement en 4 secondes, en freinant l\'élastique',
+         '12 répétitions par bras'
+       ],
+       erreur:'Laisser l\'élastique te ramener vite — tout le bénéfice est dans le freinage'},
     ],
     3:[
-      {n:'Proprioception cheville',              d:'2×45s/pied sur surface instable (coussin)',         note:'Reste stable malgré le déséquilibre'},
-      {n:'Gainage en coordination',              d:'3×50s — enchaîne ventral/latéral/dos, progressif',  note:'Garde le contrôle en accélérant'},
-      {n:'Sauts genou-poitrine stabilisés ⭐',   d:'3×8 sauts — réception sur un pied',                note:'Le genou reste aligné à l\'atterrissage'},
-      {n:'Appuis et changements de direction',   d:'3×10 — déplacements rapides avec relances',         note:'Reste bas, genou aligné, gainé'},
-      {n:'Rotation externe en position d\'armer','d':'3×15/bras élastique — coude haut',              note:'Reproduit le geste de tir'},
+      {n:'Proprioception cheville', d:'2×45s/pied sur surface instable (coussin)',
+       note:'Reste stable malgré le déséquilibre',
+       series:2, duree:45, cote:true,
+       exec:[
+         'Monte sur un coussin, un tapis plié ou une serviette roulée',
+         'Tiens-toi sur une jambe, genou souple',
+         'Cherche la stabilité en acceptant les micro-corrections',
+         '45 secondes puis change de pied'
+       ],
+       erreur:'Vouloir ne plus bouger du tout — les micro-ajustements sont justement le travail'},
+
+      {n:'Gainage en coordination', d:'3×50s — enchaîne ventral/latéral/dos, progressif',
+       note:'Garde le contrôle en accélérant',
+       series:3, duree:50, recup:45,
+       exec:[
+         'Enchaîne sans pause : ventral 15s, latéral droit 12s, latéral gauche 12s, dos 11s',
+         'Passe d\'une position à l\'autre en gardant le corps gainé',
+         'Récupère 45 secondes entre les séries'
+       ],
+       erreur:'Se relâcher pendant les transitions — c\'est là que le gainage doit tenir'},
+
+      {n:'Sauts genou-poitrine stabilisés ⭐', d:'3×8 sauts — réception sur un pied',
+       note:'Le genou reste aligné à l\'atterrissage',
+       series:3, reps:8,
+       exec:[
+         'Saut vertical, genoux remontés vers la poitrine',
+         'Réception sur un seul pied, stabilise 2 secondes',
+         'Alterne le pied de réception à chaque saut',
+         '8 sauts par série'
+       ],
+       erreur:'Réception bruyante et raide — amortis en fléchissant genou et hanche'},
+
+      {n:'Appuis et changements de direction', d:'3×10 — déplacements rapides avec relances',
+       note:'Reste bas, genou aligné, gainé',
+       series:3, reps:10,
+       exec:[
+         'Déplacements latéraux rapides sur 3 à 4 mètres',
+         'Touche le sol de la main à chaque extrémité',
+         'Reste bas, genoux fléchis, appuis actifs',
+         '10 allers-retours par série, récup 1 minute'
+       ],
+       erreur:'Se redresser entre les changements — reste en position basse tout du long'},
+
+      {n:'Rotation externe en position d\'armer', d:'3×15/bras élastique — coude haut',
+       note:'Reproduit le geste de tir',
+       series:3, reps:15, cote:true,
+       exec:[
+         'Bras à l\'horizontale, coude haut plié à 90° (position d\'armé du tir)',
+         'Élastique en main, tourne l\'avant-bras vers l\'arrière',
+         'Reviens lentement en contrôlant la tension',
+         '15 répétitions par bras'
+       ],
+       erreur:'Coude qui descend sous la ligne de l\'épaule — garde-le haut'},
     ]
   };
   return {niveau:niv, exos:ppps[niv]};
@@ -1131,7 +1279,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
       `① Allongé sur le dos, genoux fléchis à 90°, pieds à plat<br>`+
       `② Monte le bassin en contractant les fessiers — <strong>2s en haut</strong><br>`+
       `③ Descente lente et contrôlée<br>`+
-      `④ S${weekIdx+1 >= 3 ? ' Version unilatérale : une jambe tendue, 3×10/jambe':''} `,
+      `④ Serre bien les fessiers en haut, sans cambrer le bas du dos${weekIdx+1 >= 3 ? '<br>⑤ Version unilatérale : une jambe tendue, 3×10/jambe':''}`,
     elast:`<strong>Pont fessier avec élastique — ${nPont} rép :</strong><br>`+
       `① Élastique au-dessus des genoux — pousse les genoux vers l'extérieur<br>`+
       `② Monte le bassin, <strong>2s en haut</strong>, descente lente<br>`+
@@ -1225,7 +1373,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
     {titre:`Fentes — ${nFente}/jambe`, icone:'🦵', detail:descFente[mat]||descFente.aucun},
     {titre:`Pompes — ${nPompe} rép`, icone:'💪', detail:descPompe[mat]||descPompe.aucun},
     {titre:`Pont fessier — ${nPont} rép`, icone:'🍑', detail:descPont[mat]||descPont.aucun},
-    {titre:`Gainage — ${gain}s`, icone:'🧱', detail:descGainage[mat]||descGainage.aucun},
+    {titre:`Gainage — ${gain}s`, icone:'🧱', duree:gain, detail:descGainage[mat]||descGainage.aucun},
   ];
 
   // ════════════════════════════════════════════════════════════════════════

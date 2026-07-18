@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
-import { X, Clock, MapPin, CheckCircle2 } from "lucide-react";
+import { X, Clock, MapPin, CheckCircle2, Play } from "lucide-react";
 
 import type { Joueur } from "@/lib/supabase";
 import { sbSaveJoueur } from "@/lib/supabase";
@@ -9,6 +9,7 @@ import { successPing, haptic } from "@/lib/draveil/haptic";
 import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
+import { GuidedMode, exoToStep, blocToStep } from "./guided-mode";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
 interface Exo {
@@ -17,6 +18,15 @@ interface Exo {
   note?: string;
   n?: string;
   d?: string;
+  /** Etapes d'execution detaillees. */
+  exec?: string[];
+  /** Erreur classique a eviter. */
+  erreur?: string;
+  series?: number;
+  duree?: number;
+  reps?: number;
+  recup?: number;
+  cote?: boolean;
 }
 
 const exoNom = (e: Exo) => e.nom ?? e.n ?? "";
@@ -436,6 +446,15 @@ function BlocCard({
 }) {
   const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
   const steps: Bloc[] = bloc.sousBlocs ?? [];
+  const [guided, setGuided] = useState(false);
+
+  // Le mode guide s'appuie sur les exercices du bloc (circuit ou prevention).
+  const guidedSteps =
+    exos.length > 0
+      ? exos.map(exoToStep)
+      : steps.length > 0
+        ? steps.map(blocToStep)
+        : [];
 
   return (
     <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
@@ -465,6 +484,27 @@ function BlocCard({
           )}
         </div>
       </div>
+
+      {/* Mode guide : un exercice a la fois */}
+      {!readOnly && guidedSteps.length > 0 && (
+        <button
+          onClick={() => setGuided(true)}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[color:var(--draveil)]/35 bg-[color:var(--draveil)]/[0.09] py-3 text-sm font-bold text-foreground transition hover:bg-[color:var(--draveil)]/[0.15] active:scale-[0.99]"
+        >
+          <Play className="h-4 w-4 text-[color:var(--draveil-glow)]" />
+          Mode guidé — {guidedSteps.length} exercices
+        </button>
+      )}
+
+      <AnimatePresence>
+        {guided && (
+          <GuidedMode
+            titre={bloc.titre}
+            steps={guidedSteps}
+            onClose={() => setGuided(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Chrono du bloc */}
       {!readOnly && bloc.duree ? (
@@ -540,9 +580,29 @@ function BlocCard({
                       {exoDetail(e)}
                     </div>
                   )}
+                  {e.exec && e.exec.length > 0 && (
+                    <ol className="mt-2 space-y-1">
+                      {e.exec.map((line, m) => (
+                        <li
+                          key={m}
+                          className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground/75"
+                        >
+                          <span className="mt-[3px] text-[10px] font-black text-[color:var(--draveil-glow)]">
+                            {m + 1}.
+                          </span>
+                          <span>{line}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                   {e.note && (
-                    <div className="mt-1.5 text-[11px] italic text-muted-foreground">
-                      {e.note}
+                    <div className="mt-2 text-[11px] italic text-muted-foreground">
+                      💡 {e.note}
+                    </div>
+                  )}
+                  {e.erreur && (
+                    <div className="mt-1.5 text-[11px] leading-relaxed text-amber-400/90">
+                      ⚠️ À éviter : {e.erreur}
                     </div>
                   )}
                 </div>
