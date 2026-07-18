@@ -9,9 +9,10 @@ import { successPing, haptic } from "@/lib/draveil/haptic";
 import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
-import { GuidedMode, exoToStep, blocToStep, seanceToSteps } from "./guided-mode";
+import { GuidedMode, exoToStep, blocToStep } from "./guided-mode";
 import { RpeSurvey, type RpeResult } from "./rpe-survey";
 import { CircuitTimer, type CircuitExo } from "./circuit-timer";
+import { FractionneTimer } from "./fractionne-timer";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
 interface Exo {
@@ -111,7 +112,6 @@ export function SeanceDetailSheet({
   const [ressentiText, setRessentiText] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(!!alreadyValidated);
-  const [globalGuided, setGlobalGuided] = useState(false);
   const [showRpe, setShowRpe] = useState(false);
 
   const showPre = !!regenerator && !readOnly && !alreadyValidated;
@@ -128,18 +128,23 @@ export function SeanceDetailSheet({
     setPrePhase(false);
   }
 
-  async function validate(missed = false) {
+  async function validate(missed = false, rpeOverride?: number, ressentiOverride?: string) {
     if (saving || !joueur) return;
+    // Si le sondage fournit un RPE, on l'utilise
+    if (rpeOverride !== undefined) setRpe(rpeOverride);
+    if (ressentiOverride !== undefined) setRessentiText(ressentiOverride);
     setSaving(true);
+    const finalRpe = rpeOverride ?? rpe;
+    const finalRessenti = ressentiOverride ?? (showPre ? preRessenti : ressentiText || undefined);
     const list = joueur.seances_validees ?? [];
     const entry = {
       date: date ?? new Date().toISOString().split("T")[0],
       weekIdx,
       sessionIdx,
-      rpe: missed ? 0 : rpe,
+      rpe: missed ? 0 : finalRpe,
       missed,
       ts: Date.now(),
-      ressenti: showPre ? preRessenti : ressentiText || undefined,
+      ressenti: finalRessenti,
     };
     const next: Joueur = {
       ...joueur,
@@ -160,12 +165,12 @@ export function SeanceDetailSheet({
     } else {
       successPing();
       toast.success("Séance validée 💪", {
-        description: `RPE ${rpe}/10 enregistré`,
+        description: `RPE ${finalRpe}/10 enregistré`,
       });
       // Notifier le coach
       sendOneSignalNotif({
         title: "✅ Séance validée",
-        body: `${joueur.prenom ?? joueur.code} a fini sa séance (RPE ${rpe}/10)`,
+        body: `${joueur.prenom ?? joueur.code} a fini sa séance (RPE ${finalRpe}/10)`,
         target: "coach",
       });
       try {
@@ -178,7 +183,7 @@ export function SeanceDetailSheet({
           }
           if (Notification.permission === "granted") {
             new Notification("Séance validée 💪", {
-              body: `Super boulot ! RPE ${rpe}/10`,
+              body: `Super boulot ! RPE ${finalRpe}/10`,
               icon: "/icon-512.png",
             });
           }
@@ -343,18 +348,6 @@ export function SeanceDetailSheet({
               )}
             </div>
 
-            {!readOnly && (() => {
-              const allSteps = seanceToSteps(activeSeance.blocs);
-              return allSteps.length > 0 ? (
-                <button
-                  onClick={() => setGlobalGuided(true)}
-                  className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
-                >
-                  ▶ Commencer la séance guidée · {allSteps.length} étapes
-                </button>
-              ) : null;
-            })()}
-
             {showRpe && (
               <RpeSurvey
                 dureeMin={Math.round((activeSeance?.blocs?.reduce((acc,b)=>acc+(b.duree||0),0)||3000)/60)}
@@ -362,14 +355,6 @@ export function SeanceDetailSheet({
                   setShowRpe(false);
                   validate(false, result.rpe, result.ressenti);
                 }}
-              />
-            )}
-
-            {globalGuided && (
-              <GuidedMode
-                titre={activeSeance.titre}
-                steps={seanceToSteps(activeSeance.blocs)}
-                onClose={() => setGlobalGuided(false)}
               />
             )}
 
@@ -440,10 +425,31 @@ function BlocCard({
   const steps: Bloc[] = bloc.sousBlocs ?? [];
   const [guided, setGuided] = useState(false);
   const [showCircuit, setShowCircuit] = useState(false);
+  const [showFrac, setShowFrac] = useState(false);
 
   // Nombre de passages extrait du titre (ex: "Circuit Réveil — 3 passages")
   const passagesMatch = bloc.titre?.match(/(\d+)\s*passage/i);
   const nbPassages = passagesMatch ? parseInt(passagesMatch[1]) : 3;
+
+  // Parser les infos de fractionné depuis le titre et le detail
+  // Ex: "Fractionné — 6×3 min" → reps=6, effortSec=180
+  const fracMatch = bloc.titre?.match(/(\d+)×(\d+)\s*(min|s)/i);
+  const fracReps = fracMatch ? parseInt(fracMatch[1]) : 0;
+  const fracDurNum = fracMatch ? parseInt(fracMatch[2]) : 0;
+  const fracDurUnit = fracMatch?.[3]?.toLowerCase() === 'min' ? 60 : 1;
+  const fracEffortSec = fracDurNum * fracDurUnit;
+  // Récup : cherche "X min récup" ou "Xs récup" dans le detail
+  const fracRecupMatch = bloc.detail?.match(/(\d+)\s*(min|s)\s*r[ée]cup/i);
+  const fracRecupNum = fracRecupMatch ? parseInt(fracRecupMatch[1]) : 0;
+  const fracRecupUnit = fracRecupMatch?.[2]?.toLowerCase() === 'min' ? 60 : 1;
+  const fracRecupSec = fracRecupNum * fracRecupUnit || 90;
+  // Extraire la vitesse depuis le detail
+  const vitesseMatch = bloc.detail?.match(/([\d.]+)\s*km\/h/);
+  const paceMatch = bloc.detail?.match(/\(([\d]+'[\d]+")\/km\)/);
+  const pctMatch = bloc.detail?.match(/(\d+)%\s*VMA/);
+  const vitesseStr = vitesseMatch ? `${vitesseMatch[1]} km/h${paceMatch ? ` (${paceMatch[1]}/km)` : ''}` : undefined;
+  const pctStr = pctMatch ? `${pctMatch[1]}% VMA` : undefined;
+  const isFractionne = fracReps > 0 && fracEffortSec > 0 && (bloc.icone === '🏃' || bloc.icone === '⚡');
 
   // Durées selon le titre de la séance (30/30 par défaut)
   const effortMatch = bloc.detail?.match(/(\d+)s effort/);
@@ -509,8 +515,31 @@ function BlocCard({
         )}
       </AnimatePresence>
 
-      {/* Chrono du bloc */}
-      {!readOnly && bloc.duree ? (
+      {/* Timer fractionné */}
+      {!readOnly && isFractionne && (
+        <>
+          <button
+            onClick={() => setShowFrac(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+          >
+            ▶ Lancer le fractionné guidé · {fracReps} répétitions
+          </button>
+          {showFrac && (
+            <FractionneTimer
+              titre={bloc.titre}
+              reps={fracReps}
+              effortSec={fracEffortSec}
+              recupSec={fracRecupSec}
+              vitesse={vitesseStr}
+              pct={pctStr}
+              onClose={() => setShowFrac(false)}
+            />
+          )}
+        </>
+      )}
+
+      {/* Chrono simple pour les blocs non-fractionné avec durée */}
+      {!readOnly && !isFractionne && !steps.length && bloc.duree ? (
         <div className="mt-3">
           <InlineTimer
             reps={1}

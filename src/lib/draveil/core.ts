@@ -1263,7 +1263,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
     const nT = fv(menager?3:4, ressenti);
     const renfo = {
       titre:`Circuit Explosivité — ${nT} passages · 45s/15s`, icone:'⚡',
-      detail:`<strong>${nT} passages · 45s effort · 15s récup · 90s récup entre passages</strong><br>On passe à la vitesse supérieure — les mecs sortent fatigués.`,
+      detail:`<strong>${nT} passages · 35s effort · 25s récup · 90s récup entre passages</strong><br>On passe à la vitesse supérieure — les mecs sortent fatigués.`,
       sousBlocs:[
         exo('Squat sauté','🦵',
           '<strong>45s — explosivité :</strong><br>① Squat complet descente <strong>3s</strong><br>② Remontée explosive avec saut, bras dans le dos<br>③ Réception souple genoux fléchis — jamais verrouillés<br>④ Enchaîne immédiatement',
@@ -1299,7 +1299,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
     const nTP = fv(menager?2:3, ressenti);
     const renfo = {
       titre:'Double circuit — Force puis Puissance', icone:'💪',
-      detail:`<strong>Circuit A (Force) — ${nTF} passages · 8 reps lentes · 45s récup</strong><br><strong>Circuit B (Puissance) — ${nTP} passages · 30s max · 45s récup</strong>`,
+      detail:`<strong>Circuit A (Force) — ${nTF} passages · 40s effort · 20s récup</strong><br><strong>Circuit B (Puissance) — ${nTP} passages · 30s effort · 30s récup</strong><br>Circuit A : force lourde 40s/20s. Circuit B : puissance explosive 30s/30s.`,
       sousBlocs:[
         exo('[A] Squat Bulgare','🦵',
           '<strong>8 reps/jambe :</strong><br>① Pied arrière posé sur chaise ou canapé, pied avant loin devant<br>② Descente très lente <strong>4s</strong>, genou arrière vers le sol<br>③ Remontée en poussant dans le talon avant<br>④ 8 reps d\'un côté, puis de l\'autre',
@@ -1337,7 +1337,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
     const nTB = fv(menager?2:3, ressenti);
     const renfo = {
       titre:`Circuit Peak — Force ${nTA} passages + Puissance ${nTB} passages`, icone:'🔥',
-      detail:`<strong>Circuit A — ${nTA} passages · 10 reps / 30s récup</strong><br><strong>Circuit B — ${nTB} passages · 40s max / 15s récup</strong><br>La séance la plus dure du cycle — tu dois sortir épuisé.`,
+      detail:`<strong>Circuit A — ${nTA} passages · 45s effort · 15s récup</strong><br><strong>Circuit B — ${nTB} passages · 30s effort · 30s récup</strong><br>La séance la plus dure du cycle — 45s à fond sur chaque exercice, 15s pour passer au suivant.`,
       sousBlocs:[
         exo('[A] Squat bulgare leste','🦵',
           '<strong>10 reps/jambe :</strong><br>① Pied arrière sur chaise, sac à dos lesté ou haltères si dispo<br>② Descente <strong>3s</strong>, genou arrière au sol<br>③ Remontée explosive — pousse dans le talon',
@@ -1460,7 +1460,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
     const nT = fv(menager?2:3, ressenti);
     const renfoL = {
       titre:`Gainage et stabilité — ${nT} passages`, icone:'🔷',
-      detail:`<strong>${nT} passages · 40s / 30s récup</strong>`,
+      detail:`<strong>${nT} passages · 30s effort · 30s récup</strong>`,
       sousBlocs:[
         exo('Gainage ventral','🔷','<strong>40s :</strong> Avant-bras, corps aligné · Serre abdos + fessiers · Respire','Dos plat — ni trop haut ni qui s\'affaisse'),
         exo('Gainage latéral','🔷','<strong>40s/côté :</strong> Avant-bras, bassin décollé · Corps aligné','Hanche haute pendant toute la durée'),
@@ -1480,7 +1480,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
     const nT = fv(menager?2:3, ressenti);
     const renfoL = {
       titre:`Gainage dynamique + Ischios — ${nT} passages`, icone:'🔷',
-      detail:`<strong>${nT} passages · 45s / 20s récup</strong>`,
+      detail:`<strong>${nT} passages · 35s effort · 25s récup</strong>`,
       sousBlocs:[
         exo('Mountain climbers','🔷','<strong>45s :</strong> Position planche · Genoux alternativement vers la poitrine · Rythme soutenu · Bassin stable','Bassin fixe — pas de rotation'),
         exo('Pont fessier unilatéral','🍑','<strong>45s/jambe :</strong> Un pied au sol, l\'autre levé · Monte les hanches · Plus difficile que le bilatéral','Renforce aussi la stabilité du bassin'),
@@ -1504,7 +1504,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
     const nT = fv(menager?2:3, ressenti);
     const renfoL = {
       titre:`Circuit ischios + genou — ${nT} passages`, icone:'🦵',
-      detail:`<strong>${nT} passages · 45s / 30s récup</strong>`,
+      detail:`<strong>${nT} passages · 40s effort · 20s récup</strong>`,
       sousBlocs:[
         exo('Nordic Curl','🦵','<strong>Max reps :</strong> Pieds coincés · Chute 5s · Mains pour revenir','Anti-blessure ischios n°1', 'nordic_curl'),
         exo('Squat pistol aidé','🦵','<strong>6 reps/jambe :</strong> Sur une jambe · Autre jambe tendue devant · Aide-toi du mur ou chaise · Descends le plus bas possible','Renforce le genou en unilatéral — simulation appuis handball'),
@@ -1527,7 +1527,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
     const nT = fv(menager?2:3, ressenti);
     const renfoL = {
       titre:`Circuit complet — ${nT} passages`, icone:'💪',
-      detail:`<strong>${nT} passages · 40s / 20s récup — après le gros cardio</strong>`,
+      detail:`<strong>${nT} passages · 45s effort · 15s récup — après le gros cardio</strong>`,
       sousBlocs:[
         exo('Squat sauté','⚡','<strong>40s :</strong> Les jambes sont fatiguées — c\'est voulu · Saut explosif · Réception souple','Peak de fatigue musculaire — qualité des atterrissages', 'squat_saute'),
         exo('Pompes','💪','<strong>40s :</strong> Max de reps · Sur les genoux si besoin mais amplitude complète',''),
@@ -1549,7 +1549,7 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
     note:'Dernier fractionné avant la reprise — reste vif'};
   const renfoL = {
     titre:'Activation pré-collectif — 2 passages', icone:'⚡',
-    detail:'<strong>2 passages · 30s / 30s récup — léger et vif</strong>',
+    detail:'<strong>2 passages · 30s effort · 30s récup — léger et vif</strong>',
     sousBlocs:[
       exo('Squat sauté','⚡','<strong>30s — léger et explosif</strong>','Activation sans fatigue', 'squat_saute'),
       exo('Pompes explosives','💪','<strong>30s :</strong> Puissance maintenue','', 'pompes_explosives'),
