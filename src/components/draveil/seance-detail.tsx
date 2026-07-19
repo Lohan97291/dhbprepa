@@ -547,15 +547,15 @@ function BlocCard({
                           {s.titre.replace(/\[A\] |\[B\] /g, '')}
                         </span>
                         {(s as Bloc).videoUrl && (
-                          <a
-                            href={(s as Bloc).videoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-auto shrink-0 text-[10px] font-bold text-red-400/70 hover:text-red-400"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open((s as Bloc).videoUrl, '_blank', 'noopener,noreferrer');
+                            }}
+                            className="ml-auto shrink-0 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 active:bg-red-500/25"
                           >
                             ▶ vidéo
-                          </a>
+                          </button>
                         )}
                       </div>
                       {s.detail && (
@@ -589,6 +589,14 @@ function BlocCard({
                           {k + 1}
                         </span>
                         <span className="text-sm font-bold text-foreground">{exoNom(e)}</span>
+                        {(e as any).videoUrl && (
+                          <button
+                            onClick={() => window.open((e as any).videoUrl, '_blank', 'noopener,noreferrer')}
+                            className="shrink-0 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 active:bg-red-500/25"
+                          >
+                            ▶ vidéo
+                          </button>
+                        )}
                       </div>
                       {exoDetail(e) && (
                         <div className="text-xs text-foreground/65">{exoDetail(e)}</div>
