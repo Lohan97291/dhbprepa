@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Pause, Play, SkipForward, X, ChevronRight } from "lucide-react";
 
@@ -155,7 +156,7 @@ export function CircuitTimer({
   const mm = String(Math.floor(sec / 60)).padStart(1, "0");
   const ss = String(sec % 60).padStart(2, "0");
 
-  return (
+  const content = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -367,4 +368,6 @@ export function CircuitTimer({
       )}
     </motion.div>
   );
+  if (typeof document === "undefined") return null;
+  return createPortal(content, document.body);
 }

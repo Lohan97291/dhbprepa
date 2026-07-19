@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Pause, Play, SkipForward, X } from "lucide-react";
 
@@ -95,7 +96,7 @@ export function FractionneTimer({ titre, reps, effortSec, recupSec, vitesse, pct
   const effortLabel = effortMin > 0 ? `${effortMin}min${effortS > 0 ? effortS + 's' : ''}` : `${effortSec}s`;
   const recupLabel = recupMin > 0 ? `${recupMin}min${recupS > 0 ? recupS + 's' : ''}` : `${recupSec}s`;
 
-  return (
+  const content = (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[80] flex flex-col bg-[color:var(--background)]"
       style={{ paddingTop: "env(safe-area-inset-top)" }}>
@@ -242,4 +243,6 @@ export function FractionneTimer({ titre, reps, effortSec, recupSec, vitesse, pct
       )}
     </motion.div>
   );
+  if (typeof document === "undefined") return null;
+  return createPortal(content, document.body);
 }

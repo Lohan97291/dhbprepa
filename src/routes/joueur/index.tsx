@@ -5,6 +5,8 @@ import { Activity, Calendar, Flame, PlayCircle, Sparkles } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
+import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
+import { FractionneTimer } from "@/components/draveil/fractionne-timer";
 import {
   SeanceDetailSheet,
   type SeanceLike,
@@ -28,6 +30,23 @@ export const Route = createFileRoute("/joueur/")({
 
 function JoueurHome() {
   const { joueur } = useSession();
+  // États pour les timers au niveau root (évite les problèmes fixed/overflow)
+  const [circuitOverlay, setCircuitOverlay] = useState<{
+    titre: string;
+    exercices: CircuitExo[];
+    effortSec: number;
+    recupSec: number;
+    passages: number;
+  } | null>(null);
+  const [fracOverlay, setFracOverlay] = useState<{
+    titre: string;
+    reps: number;
+    effortSec: number;
+    recupSec: number;
+    vitesse?: string;
+    pct?: string;
+  } | null>(null);
+
   const [openSeance, setOpenSeance] = useState<{
     seance: SeanceLike;
     weekIdx: number;
@@ -274,6 +293,32 @@ function JoueurHome() {
                 }
           }
           onClose={() => setOpenSeance(null)}
+          onLaunchCircuit={(data) => setCircuitOverlay(data)}
+          onLaunchFrac={(data) => setFracOverlay(data)}
+        />
+      )}
+
+      {/* Timers au niveau root — pas bloqués par overflow du sheet */}
+      {circuitOverlay && (
+        <CircuitTimer
+          titre={circuitOverlay.titre}
+          exercices={circuitOverlay.exercices}
+          effortSec={circuitOverlay.effortSec}
+          recupSec={circuitOverlay.recupSec}
+          recupPassageSec={90}
+          passages={circuitOverlay.passages}
+          onClose={() => setCircuitOverlay(null)}
+        />
+      )}
+      {fracOverlay && (
+        <FractionneTimer
+          titre={fracOverlay.titre}
+          reps={fracOverlay.reps}
+          effortSec={fracOverlay.effortSec}
+          recupSec={fracOverlay.recupSec}
+          vitesse={fracOverlay.vitesse}
+          pct={fracOverlay.pct}
+          onClose={() => setFracOverlay(null)}
         />
       )}
 

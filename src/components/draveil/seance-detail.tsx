@@ -11,8 +11,6 @@ import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
 import { GuidedMode, exoToStep, blocToStep } from "./guided-mode";
 import { RpeSurvey, type RpeResult } from "./rpe-survey";
-import { CircuitTimer, type CircuitExo } from "./circuit-timer";
-import { FractionneTimer } from "./fractionne-timer";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
 interface Exo {
@@ -360,7 +358,10 @@ export function SeanceDetailSheet({
 
             <div className="space-y-3">
               {(activeSeance.blocs ?? []).map((b, i) => (
-                <BlocCard key={i} bloc={b} index={i} readOnly={readOnly} />
+                <BlocCard key={i} bloc={b} index={i} readOnly={readOnly}
+                onLaunchCircuit={onLaunchCircuit}
+                onLaunchFrac={onLaunchFrac}
+              />
               ))}
             </div>
 
@@ -416,16 +417,18 @@ function BlocCard({
   bloc,
   index,
   readOnly,
+  onLaunchCircuit,
+  onLaunchFrac,
 }: {
   bloc: Bloc;
   index: number;
   readOnly?: boolean;
+  onLaunchCircuit?: (data: any) => void;
+  onLaunchFrac?: (data: any) => void;
 }) {
   const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
   const steps: Bloc[] = bloc.sousBlocs ?? [];
   const [expanded, setExpanded] = useState(false);
-  const [showCircuit, setShowCircuit] = useState(false);
-  const [showFrac, setShowFrac] = useState(false);
   const [showGuided, setShowGuided] = useState(false);
 
   // Parser passages
@@ -614,7 +617,13 @@ function BlocCard({
         <div className="px-4 pb-4">
           {steps.length > 0 && (
             <button
-              onClick={() => setShowCircuit(true)}
+              onClick={() => onLaunchCircuit?.({
+                  titre: bloc.titre.replace(/\[A\] |\[B\] /g, ''),
+                  exercices: steps,
+                  effortSec,
+                  recupSec,
+                  passages: nbPassages,
+                })}
               className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
             >
               ▶ Lancer le circuit guidé · {nbPassages} passages
@@ -622,7 +631,14 @@ function BlocCard({
           )}
           {isFractionne && (
             <button
-              onClick={() => setShowFrac(true)}
+              onClick={() => onLaunchFrac?.({
+                  titre: bloc.titre,
+                  reps: fracReps,
+                  effortSec: fracEffortSec,
+                  recupSec: fracRecupSec,
+                  vitesse: vitesseStr,
+                  pct: pctStr,
+                })}
               className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
             >
               ▶ Lancer le fractionné guidé · {fracReps} répétitions
@@ -644,29 +660,7 @@ function BlocCard({
         </div>
       )}
 
-      {/* ── Overlays ────────────────────────────────────────────────── */}
-      {showCircuit && (
-        <CircuitTimer
-          titre={bloc.titre.replace(/\[A\] |\[B\] /g, '')}
-          exercices={steps as CircuitExo[]}
-          effortSec={effortSec}
-          recupSec={recupSec}
-          recupPassageSec={90}
-          passages={nbPassages}
-          onClose={() => setShowCircuit(false)}
-        />
-      )}
-      {showFrac && (
-        <FractionneTimer
-          titre={bloc.titre}
-          reps={fracReps}
-          effortSec={fracEffortSec}
-          recupSec={fracRecupSec}
-          vitesse={vitesseStr}
-          pct={pctStr}
-          onClose={() => setShowFrac(false)}
-        />
-      )}
+      {/* Timers gérés au niveau root via onLaunchCircuit/onLaunchFrac */}
       <AnimatePresence>
         {showGuided && (
           <GuidedMode
