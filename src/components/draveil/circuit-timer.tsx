@@ -161,8 +161,8 @@ export function CircuitTimer({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[80] flex flex-col bg-[color:var(--background)]"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className="fixed inset-0 z-[200] flex flex-col"
+      style={{ background: "var(--background)", isolation: "isolate", paddingTop: "env(safe-area-inset-top)" }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/8">
@@ -368,6 +368,8 @@ export function CircuitTimer({
       )}
     </motion.div>
   );
-  if (typeof document === "undefined") return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
   return createPortal(content, document.body);
 }
