@@ -1228,7 +1228,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
   if(weekIdx===0){
     const nT = fv(menager?2:3, ressenti);
     const renfo = {
-      titre:`Circuit Réveil — ${nT} passages · 40s/20s`, icone:'💪',
+      titre:`Circuit Réveil — ${nT} passages`, icone:'💪',
       detail:`<strong>${nT} passages · 30s effort · 30s récup · 90s récup entre passages</strong><br>Sur chaque exercice : 30 secondes à fond, 30 secondes de récup, puis exercice suivant. Quand tous les exercices sont faits : 90s récup et tu recommences.`,
       sousBlocs:[
         exo('Squat poids du corps','🦵',
@@ -1262,7 +1262,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
   if(weekIdx===1){
     const nT = fv(menager?3:4, ressenti);
     const renfo = {
-      titre:`Circuit Explosivité — ${nT} passages · 45s/15s`, icone:'⚡',
+      titre:`Circuit Explosivité — ${nT} passages`, icone:'⚡',
       detail:`<strong>${nT} passages · 35s effort · 25s récup · 90s récup entre passages</strong><br>On passe à la vitesse supérieure — les mecs sortent fatigués.`,
       sousBlocs:[
         exo('Squat sauté','🦵',
@@ -1373,7 +1373,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
   // ── SEMAINE 5 : Affûtage explosif ⚡ ──────────────────────────────────────
   const nT = fv(menager?2:3, ressenti);
   const renfo = {
-    titre:`Circuit Affûtage — ${nT} passages · 30s/30s`, icone:'⚡',
+    titre:`Circuit Affûtage — ${nT} passages`, icone:'⚡',
     detail:`<strong>${nT} passages · 30s effort · 30s récup — explosivité et fraîcheur</strong><br>30 secondes à fond, 30 secondes de récup. Objectif : rester explosif et frais pour le collectif.`,
     sousBlocs:[
       exo('Squat sauté explosif','⚡','<strong>30s — saut maximum :</strong><br>Squat + saut le plus haut · Réception souple','Qualité des sauts — pas de volume', 'squat_saute'),

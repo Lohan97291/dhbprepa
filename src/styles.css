@@ -189,3 +189,56 @@
   background: oklch(1 0 0 / 0.12);
   border-radius: 999px;
 }
+
+/* ── Interactive lift ─────────────────────── */
+@utility lift {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+              box-shadow 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+              border-color 0.3s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--draveil) 40%, transparent);
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.08) inset,
+    0 30px 60px -24px oklch(0 0 0 / 0.7),
+    0 0 0 1px color-mix(in oklab, var(--draveil) 20%, transparent);
+}
+
+/* ── Ambient orb ──────────────────────────── */
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(20px, -14px) scale(1.08); }
+}
+@utility orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.55;
+  animation: drift 14s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Shimmer skeleton ─────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+@utility shimmer {
+  background: linear-gradient(90deg,
+    oklch(1 0 0 / 0.04) 0%,
+    oklch(1 0 0 / 0.10) 50%,
+    oklch(1 0 0 / 0.04) 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ── Soft pulse ring (CTA) ────────────────── */
+@keyframes ring-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--draveil) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 14px color-mix(in oklab, var(--draveil) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--draveil) 0%, transparent); }
+}
+@utility ring-pulse {
+  animation: ring-pulse 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}

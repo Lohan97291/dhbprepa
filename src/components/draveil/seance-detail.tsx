@@ -423,27 +423,25 @@ function BlocCard({
 }) {
   const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
   const steps: Bloc[] = bloc.sousBlocs ?? [];
-  const [guided, setGuided] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [showCircuit, setShowCircuit] = useState(false);
   const [showFrac, setShowFrac] = useState(false);
+  const [showGuided, setShowGuided] = useState(false);
 
-  // Nombre de passages extrait du titre (ex: "Circuit Réveil — 3 passages")
+  // Parser passages
   const passagesMatch = bloc.titre?.match(/(\d+)\s*passage/i);
   const nbPassages = passagesMatch ? parseInt(passagesMatch[1]) : 3;
 
-  // Parser les infos de fractionné depuis le titre et le detail
-  // Ex: "Fractionné — 6×3 min" → reps=6, effortSec=180
+  // Parser fractionné
   const fracMatch = bloc.titre?.match(/(\d+)×(\d+)\s*(min|s)/i);
   const fracReps = fracMatch ? parseInt(fracMatch[1]) : 0;
   const fracDurNum = fracMatch ? parseInt(fracMatch[2]) : 0;
   const fracDurUnit = fracMatch?.[3]?.toLowerCase() === 'min' ? 60 : 1;
   const fracEffortSec = fracDurNum * fracDurUnit;
-  // Récup : cherche "X min récup" ou "Xs récup" dans le detail
   const fracRecupMatch = bloc.detail?.match(/(\d+)\s*(min|s)\s*r[ée]cup/i);
   const fracRecupNum = fracRecupMatch ? parseInt(fracRecupMatch[1]) : 0;
   const fracRecupUnit = fracRecupMatch?.[2]?.toLowerCase() === 'min' ? 60 : 1;
   const fracRecupSec = fracRecupNum * fracRecupUnit || 90;
-  // Extraire la vitesse depuis le detail
   const vitesseMatch = bloc.detail?.match(/([\d.]+)\s*km\/h/);
   const paceMatch = bloc.detail?.match(/\(([\d]+'[\d]+")\/km\)/);
   const pctMatch = bloc.detail?.match(/(\d+)%\s*VMA/);
@@ -451,119 +449,205 @@ function BlocCard({
   const pctStr = pctMatch ? `${pctMatch[1]}% VMA` : undefined;
   const isFractionne = fracReps > 0 && fracEffortSec > 0 && (bloc.icone === '🏃' || bloc.icone === '⚡');
 
-  // Durées selon le titre de la séance (30/30 par défaut)
+  // Parser effort/recup pour circuit
   const effortMatch = bloc.detail?.match(/(\d+)s effort/);
   const recupMatch  = bloc.detail?.match(/(\d+)s récup/);
   const effortSec = effortMatch ? parseInt(effortMatch[1]) : 30;
   const recupSec  = recupMatch  ? parseInt(recupMatch[1])  : 30;
 
-  // Le mode guide s'appuie sur les exercices du bloc (circuit ou prevention).
-  const guidedSteps =
-    exos.length > 0
-      ? exos.map(exoToStep)
-      : steps.length > 0
-        ? steps.map(blocToStep)
-        : [];
+  // Steps pour mode guidé PPP
+  const guidedSteps = exos.length > 0 ? exos.map(exoToStep) : [];
+
+  const hasDetails = steps.length > 0 || exos.length > 0;
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
-      {/* En-tete */}
-      <div className="flex items-start gap-3">
-        <div className="text-xl">{bloc.icone ?? "•"}</div>
+    <div className="rounded-2xl border border-white/8 bg-white/[0.025] overflow-hidden">
+
+      {/* ── En-tête cliquable ───────────────────────────────────────── */}
+      <button
+        className="flex w-full items-start gap-3 p-4 text-left"
+        onClick={() => hasDetails && setExpanded(e => !e)}
+      >
+        <div className="text-xl shrink-0 mt-0.5">{bloc.icone ?? "•"}</div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Bloc {index + 1}
-            </span>
+          <div className="flex items-center gap-2 flex-wrap">
             {bloc.duree ? (
-              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-foreground/70">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {fmtDuree(bloc.duree)}
               </span>
             ) : null}
+            {vitesseStr && (
+              <span className="rounded-full bg-[color:var(--draveil)]/15 px-2 py-0.5 text-[10px] font-bold text-[color:var(--draveil-glow)]">
+                {vitesseStr}
+              </span>
+            )}
+            {steps.length > 0 && (
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                {steps.length} exercices · {nbPassages} passages
+              </span>
+            )}
           </div>
-          <div className="mt-0.5 font-semibold text-foreground">
-            {bloc.titre}
+          <div className="mt-0.5 font-semibold text-foreground leading-snug">
+            {bloc.titre.replace(/\[A\] |\[B\] /g, '')}
           </div>
-
-          {bloc.detail && (
+          {bloc.detail && !hasDetails && (
             <div
-              className="mt-2 text-sm leading-relaxed text-foreground/85 [&_strong]:font-semibold [&_strong]:text-foreground"
+              className="mt-1.5 text-sm leading-relaxed text-foreground/75 [&_strong]:font-semibold [&_strong]:text-foreground"
               dangerouslySetInnerHTML={{ __html: bloc.detail }}
             />
           )}
+          {bloc.detail && hasDetails && !expanded && (
+            <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
+              {bloc.detail.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}
+            </div>
+          )}
         </div>
-      </div>
+        {hasDetails && (
+          <div className={`shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+            ▾
+          </div>
+        )}
+      </button>
 
-      {/* Mode guide : un exercice a la fois */}
-      {!readOnly && guidedSteps.length > 0 && (
-        <button
-          onClick={() => setGuided(true)}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[color:var(--draveil)]/35 bg-[color:var(--draveil)]/[0.09] py-3 text-sm font-bold text-foreground transition hover:bg-[color:var(--draveil)]/[0.15] active:scale-[0.99]"
-        >
-          <Play className="h-4 w-4 text-[color:var(--draveil-glow)]" />
-          Mode guidé — {guidedSteps.length} exercices
-        </button>
-      )}
-
+      {/* ── Contenu expandable ──────────────────────────────────────── */}
       <AnimatePresence>
-        {guided && (
-          <GuidedMode
-            titre={bloc.titre}
-            steps={guidedSteps}
-            onClose={() => setGuided(false)}
-          />
+        {(expanded || !hasDetails) && hasDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
+
+              {/* Description complète */}
+              {bloc.detail && (
+                <div
+                  className="text-sm leading-relaxed text-foreground/75 [&_strong]:font-semibold [&_strong]:text-foreground"
+                  dangerouslySetInnerHTML={{ __html: bloc.detail }}
+                />
+              )}
+
+              {/* Exercices du circuit */}
+              {steps.length > 0 && (
+                <div className="space-y-2">
+                  {steps.map((s, k) => (
+                    <div key={k} className="rounded-xl bg-white/[0.04] p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[10px] font-black text-[color:var(--draveil-glow)]">
+                          {k + 1}
+                        </span>
+                        <span className="text-sm font-bold text-foreground">
+                          {s.titre.replace(/\[A\] |\[B\] /g, '')}
+                        </span>
+                        {(s as Bloc).videoUrl && (
+                          <a
+                            href={(s as Bloc).videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto shrink-0 text-[10px] font-bold text-red-400/70 hover:text-red-400"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            ▶ vidéo
+                          </a>
+                        )}
+                      </div>
+                      {s.detail && (
+                        <div
+                          className="text-xs leading-relaxed text-foreground/65 [&_strong]:text-foreground/90 [&_strong]:font-semibold"
+                          dangerouslySetInnerHTML={{ __html: s.detail }}
+                        />
+                      )}
+                      {s.note && (
+                        <div className="mt-1.5 text-[11px] text-[color:var(--draveil-glow)]/80 italic">
+                          💡 {s.note}
+                        </div>
+                      )}
+                      {(s as Bloc).variante && (
+                        <div className="mt-1.5 text-[11px] text-yellow-400/70">
+                          Variante : {(s as Bloc).variante}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Exercices PPP */}
+              {exos.length > 0 && (
+                <div className="space-y-2">
+                  {exos.map((e, k) => (
+                    <div key={k} className="rounded-xl bg-white/[0.04] p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[10px] font-black text-[color:var(--draveil-glow)]">
+                          {k + 1}
+                        </span>
+                        <span className="text-sm font-bold text-foreground">{exoNom(e)}</span>
+                      </div>
+                      {exoDetail(e) && (
+                        <div className="text-xs text-foreground/65">{exoDetail(e)}</div>
+                      )}
+                      {e.exec && e.exec.length > 0 && (
+                        <ol className="mt-1.5 space-y-0.5">
+                          {e.exec.map((line, m) => (
+                            <li key={m} className="flex gap-1.5 text-[11px] text-foreground/60">
+                              <span className="font-bold text-[color:var(--draveil-glow)] shrink-0">{m+1}.</span>
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                      {e.note && <div className="mt-1.5 text-[11px] text-muted-foreground italic">💡 {e.note}</div>}
+                      {e.erreur && <div className="mt-1 text-[11px] text-amber-400/80">⚠️ {e.erreur}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Timer fractionné */}
-      {!readOnly && isFractionne && (
-        <>
-          <button
-            onClick={() => setShowFrac(true)}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
-          >
-            ▶ Lancer le fractionné guidé · {fracReps} répétitions
-          </button>
-          {showFrac && (
-            <FractionneTimer
-              titre={bloc.titre}
-              reps={fracReps}
-              effortSec={fracEffortSec}
-              recupSec={fracRecupSec}
-              vitesse={vitesseStr}
-              pct={pctStr}
-              onClose={() => setShowFrac(false)}
-            />
+      {/* ── Bouton d'action (timer) ─────────────────────────────────── */}
+      {!readOnly && (steps.length > 0 || isFractionne || (!hasDetails && bloc.duree)) && (
+        <div className="px-4 pb-4">
+          {steps.length > 0 && (
+            <button
+              onClick={() => setShowCircuit(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+            >
+              ▶ Lancer le circuit guidé · {nbPassages} passages
+            </button>
           )}
-        </>
-      )}
-
-      {/* Chrono simple pour les blocs non-fractionné avec durée */}
-      {!readOnly && !isFractionne && !steps.length && bloc.duree ? (
-        <div className="mt-3">
-          <InlineTimer
-            reps={1}
-            effortSec={bloc.duree}
-            recupSec={0}
-            label={bloc.titre}
-          />
+          {isFractionne && (
+            <button
+              onClick={() => setShowFrac(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+            >
+              ▶ Lancer le fractionné guidé · {fracReps} répétitions
+            </button>
+          )}
+          {!hasDetails && bloc.duree && !isFractionne && (
+            <div className="mt-1">
+              <InlineTimer reps={1} effortSec={bloc.duree} recupSec={0} label={bloc.titre} />
+            </div>
+          )}
+          {exos.length > 0 && (
+            <button
+              onClick={() => setShowGuided(true)}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-[color:var(--draveil)]/30 bg-[color:var(--draveil)]/[0.08] py-3 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+            >
+              ▶ Exercices guidés · {exos.length} exercices de prévention
+            </button>
+          )}
         </div>
-      ) : null}
-
-      {/* Bouton lancer le circuit */}
-      {!readOnly && steps.length > 0 && (
-        <button
-          onClick={() => setShowCircuit(true)}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
-        >
-          ▶ Lancer le circuit guidé · {nbPassages} passages
-        </button>
       )}
 
-      {/* CircuitTimer overlay */}
-      {showCircuit && steps.length > 0 && (
+      {/* ── Overlays ────────────────────────────────────────────────── */}
+      {showCircuit && (
         <CircuitTimer
-          titre={bloc.titre}
+          titre={bloc.titre.replace(/\[A\] |\[B\] /g, '')}
           exercices={steps as CircuitExo[]}
           effortSec={effortSec}
           recupSec={recupSec}
@@ -572,123 +656,29 @@ function BlocCard({
           onClose={() => setShowCircuit(false)}
         />
       )}
-
-      {/* Exercices du circuit, etape par etape */}
-      {steps.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
-            Les {steps.length} exercices du circuit
-          </div>
-          {steps.map((s, k) => (
-            <div
-              key={k}
-              className="rounded-xl border border-white/8 bg-white/[0.04] p-3"
-            >
-              <div className="flex items-start gap-2.5">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[11px] font-black text-[color:var(--draveil-glow)]">
-                  {k + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-foreground">
-                      {s.icone ? `${s.icone} ` : ""}
-                      {s.titre}
-                    </span>
-                    {(s as Bloc).videoUrl && (
-                      <a
-                        href={(s as Bloc).videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 hover:bg-red-500/25 transition"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        ▶ Vidéo
-                      </a>
-                    )}
-                  </div>
-                  {(s as Bloc).variante && (
-                    <div className="mt-1 rounded-xl border border-yellow-500/20 bg-yellow-500/[0.06] px-3 py-1.5 text-[11px] text-yellow-400/90">
-                      💡 Variante : {(s as Bloc).variante}
-                    </div>
-                  )}
-                  {s.detail && (
-                    <div
-                      className="mt-1.5 text-[13px] leading-relaxed text-foreground/80 [&_strong]:font-semibold [&_strong]:text-foreground"
-                      dangerouslySetInnerHTML={{ __html: s.detail }}
-                    />
-                  )}
-                  {s.note && (
-                    <div className="mt-1.5 text-[11px] italic text-muted-foreground">
-                      {s.note}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      {showFrac && (
+        <FractionneTimer
+          titre={bloc.titre}
+          reps={fracReps}
+          effortSec={fracEffortSec}
+          recupSec={fracRecupSec}
+          vitesse={vitesseStr}
+          pct={pctStr}
+          onClose={() => setShowFrac(false)}
+        />
       )}
+      <AnimatePresence>
+        {showGuided && (
+          <GuidedMode
+            titre={bloc.titre}
+            steps={guidedSteps}
+            onClose={() => setShowGuided(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Exercices de prevention (PPP) */}
-      {exos.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
-            Les {exos.length} exercices
-          </div>
-          {exos.map((e, k) => (
-            <div
-              key={k}
-              className="rounded-xl border border-white/8 bg-white/[0.04] p-3"
-            >
-              <div className="flex items-start gap-2.5">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[11px] font-black text-[color:var(--draveil-glow)]">
-                  {k + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-foreground">
-                    {exoNom(e)}
-                  </div>
-                  {exoDetail(e) && (
-                    <div className="mt-1 text-[13px] leading-relaxed text-foreground/80">
-                      {exoDetail(e)}
-                    </div>
-                  )}
-                  {e.exec && e.exec.length > 0 && (
-                    <ol className="mt-2 space-y-1">
-                      {e.exec.map((line, m) => (
-                        <li
-                          key={m}
-                          className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground/75"
-                        >
-                          <span className="mt-[3px] text-[10px] font-black text-[color:var(--draveil-glow)]">
-                            {m + 1}.
-                          </span>
-                          <span>{line}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                  {e.note && (
-                    <div className="mt-2 text-[11px] italic text-muted-foreground">
-                      💡 {e.note}
-                    </div>
-                  )}
-                  {e.erreur && (
-                    <div className="mt-1.5 text-[11px] leading-relaxed text-amber-400/90">
-                      ⚠️ À éviter : {e.erreur}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {bloc.note && (
-        <div className="mt-3 text-xs italic text-muted-foreground">
-          {bloc.note}
-        </div>
+      {bloc.note && !hasDetails && (
+        <div className="px-4 pb-3 text-xs italic text-muted-foreground">{bloc.note}</div>
       )}
     </div>
   );
