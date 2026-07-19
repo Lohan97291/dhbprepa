@@ -105,6 +105,8 @@ export function SeanceDetailSheet({
   readOnly,
   regenerator,
   onClose,
+  onLaunchCircuit,
+  onLaunchFrac,
 }: Props) {
   const [rpe, setRpe] = useState<number>(0);
   const [ressentiText, setRessentiText] = useState<string>("");
