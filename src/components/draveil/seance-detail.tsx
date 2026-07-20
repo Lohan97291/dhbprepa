@@ -622,8 +622,8 @@ function BlocCard({
         )}
       </AnimatePresence>
 
-      {/* ── Bouton d'action (timer) ─────────────────────────────────── */}
-      {!readOnly && (steps.length > 0 || isFractionne || (!hasDetails && bloc.duree)) && (
+      {/* ── Bouton d'action (timer) — visible seulement si expanded ou pas de détails ── */}
+      {!readOnly && (steps.length > 0 || isFractionne || (!hasDetails && bloc.duree)) && (expanded || !hasDetails) && (
         <div className="px-4 pb-4">
           {steps.length > 0 && (
             <button
