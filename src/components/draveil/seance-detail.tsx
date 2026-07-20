@@ -9,7 +9,6 @@ import { successPing, haptic } from "@/lib/draveil/haptic";
 import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
-import { GuidedMode, exoToStep, blocToStep } from "./guided-mode";
 import { RpeSurvey, type RpeResult } from "./rpe-survey";
 
 /** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
@@ -93,6 +92,10 @@ interface Props {
    */
   regenerator?: (ressenti: Ressenti, materiel: MatKey) => SeanceLike;
   onClose: () => void;
+  onLaunchCircuit?: (data: any) => void;
+  onLaunchFrac?: (data: any) => void;
+  onLaunchPpp?: (data: any) => void;
+  onShowRpe?: (data: { dureeMin: number; onValidate: (rpe: number, ressenti: string) => void }) => void;
 }
 
 export function SeanceDetailSheet({
@@ -107,6 +110,7 @@ export function SeanceDetailSheet({
   onClose,
   onLaunchCircuit,
   onLaunchFrac,
+  onLaunchPpp,
   onShowRpe,
 }: Props) {
   const [rpe, setRpe] = useState<number>(0);
@@ -355,6 +359,7 @@ export function SeanceDetailSheet({
                 <BlocCard key={i} bloc={b} index={i} readOnly={readOnly}
                 onLaunchCircuit={onLaunchCircuit}
                 onLaunchFrac={onLaunchFrac}
+                onLaunchPpp={onLaunchPpp}
               />
               ))}
             </div>
@@ -413,18 +418,19 @@ function BlocCard({
   readOnly,
   onLaunchCircuit,
   onLaunchFrac,
+  onLaunchPpp,
 }: {
   bloc: Bloc;
   index: number;
   readOnly?: boolean;
   onLaunchCircuit?: (data: any) => void;
   onLaunchFrac?: (data: any) => void;
+  onLaunchPpp?: (data: any) => void;
   onShowRpe?: (data: { dureeMin: number; onValidate: (rpe: number, ressenti: string) => void }) => void;
 }) {
   const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
   const steps: Bloc[] = bloc.sousBlocs ?? [];
   const [expanded, setExpanded] = useState(false);
-  const [showGuided, setShowGuided] = useState(false);
 
   // Parser passages
   const passagesMatch = bloc.titre?.match(/(\d+)\s*passage/i);
@@ -453,8 +459,7 @@ function BlocCard({
   const effortSec = effortMatch ? parseInt(effortMatch[1]) : 30;
   const recupSec  = recupMatch  ? parseInt(recupMatch[1])  : 30;
 
-  // Steps pour mode guidé PPP
-  const guidedSteps = exos.length > 0 ? exos.map(exoToStep) : [];
+
 
   const hasDetails = steps.length > 0 || exos.length > 0;
 
@@ -654,25 +659,26 @@ function BlocCard({
           )}
           {exos.length > 0 && (
             <button
-              onClick={() => setShowGuided(true)}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-[color:var(--draveil)]/30 bg-[color:var(--draveil)]/[0.08] py-3 text-sm font-semibold text-foreground transition active:scale-[0.98]"
+              onClick={() => onLaunchPpp?.({
+                titre: bloc.titre.replace(/\[A\] |\[B\] /g, ''),
+                exercices: exos.map((e: any) => ({
+                  titre: e.nom ?? e.n ?? '',
+                  duree: e.duree ?? 30,
+                  series: e.series ?? 1,
+                  recup: e.recup ?? 30,
+                  cote: !!e.cote,
+                  exec: e.exec,
+                  note: e.note,
+                  videoUrl: e.videoUrl,
+                })),
+              })}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
             >
-              ▶ Exercices guidés · {exos.length} exercices de prévention
+              🛡️ Lancer la PPP guidée · {exos.length} exercices
             </button>
           )}
         </div>
       )}
-
-      {/* Timers gérés au niveau root via onLaunchCircuit/onLaunchFrac */}
-      <AnimatePresence>
-        {showGuided && (
-          <GuidedMode
-            titre={bloc.titre}
-            steps={guidedSteps}
-            onClose={() => setShowGuided(false)}
-          />
-        )}
-      </AnimatePresence>
 
       {bloc.note && !hasDetails && (
         <div className="px-4 pb-3 text-xs italic text-muted-foreground">{bloc.note}</div>

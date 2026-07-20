@@ -8,6 +8,7 @@ import { DhbMark } from "@/components/draveil/logo";
 import { RpeSurvey, type RpeResult } from "@/components/draveil/rpe-survey";
 import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
 import { FractionneTimer } from "@/components/draveil/fractionne-timer";
+import { PppTimer, type PppExo } from "@/components/draveil/ppp-timer";
 import {
   SeanceDetailSheet,
   type SeanceLike,
@@ -47,6 +48,10 @@ function JoueurHome() {
     recupSec: number;
     vitesse?: string;
     pct?: string;
+  } | null>(null);
+  const [pppOverlay, setPppOverlay] = useState<{
+    titre: string;
+    exercices: PppExo[];
   } | null>(null);
 
   const [openSeance, setOpenSeance] = useState<{
@@ -297,6 +302,7 @@ function JoueurHome() {
           onClose={() => setOpenSeance(null)}
           onLaunchCircuit={(data) => setCircuitOverlay(data)}
           onLaunchFrac={(data) => setFracOverlay(data)}
+          onLaunchPpp={(data) => setPppOverlay(data)}
           onShowRpe={(data) => setRpeOverlay(data)}
         />
       )}
@@ -332,6 +338,14 @@ function JoueurHome() {
           vitesse={fracOverlay.vitesse}
           pct={fracOverlay.pct}
           onClose={() => setFracOverlay(null)}
+        />
+      )}
+
+      {pppOverlay && (
+        <PppTimer
+          titre={pppOverlay.titre}
+          exercices={pppOverlay.exercices}
+          onClose={() => setPppOverlay(null)}
         />
       )}
 
