@@ -5,6 +5,7 @@ import { Activity, Calendar, Flame, PlayCircle, Sparkles } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
+import { RpeSurvey, type RpeResult } from "@/components/draveil/rpe-survey";
 import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
 import { FractionneTimer } from "@/components/draveil/fractionne-timer";
 import {
@@ -38,6 +39,7 @@ function JoueurHome() {
     recupSec: number;
     passages: number;
   } | null>(null);
+  const [rpeOverlay, setRpeOverlay] = useState<{ dureeMin: number; onValidate?: (rpe: number, ressenti: string) => void } | null>(null);
   const [fracOverlay, setFracOverlay] = useState<{
     titre: string;
     reps: number;
@@ -295,6 +297,7 @@ function JoueurHome() {
           onClose={() => setOpenSeance(null)}
           onLaunchCircuit={(data) => setCircuitOverlay(data)}
           onLaunchFrac={(data) => setFracOverlay(data)}
+          onShowRpe={(data) => setRpeOverlay(data)}
         />
       )}
 
@@ -310,6 +313,16 @@ function JoueurHome() {
           onClose={() => setCircuitOverlay(null)}
         />
       )}
+      {rpeOverlay && (
+        <RpeSurvey
+          dureeMin={rpeOverlay.dureeMin}
+          onClose={(result) => {
+            rpeOverlay.onValidate?.(result.rpe, result.ressenti);
+            setRpeOverlay(null);
+          }}
+        />
+      )}
+
       {fracOverlay && (
         <FractionneTimer
           titre={fracOverlay.titre}

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RpeSurvey, type RpeResult } from "@/components/draveil/rpe-survey";
 import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
 import { FractionneTimer } from "@/components/draveil/fractionne-timer";
 import { motion } from "motion/react";
@@ -40,6 +41,7 @@ function ProgrammePage() {
   const [circuitOverlay, setCircuitOverlay] = useState<{
     titre: string; exercices: CircuitExo[]; effortSec: number; recupSec: number; passages: number;
   } | null>(null);
+  const [rpeOverlay, setRpeOverlay] = useState<{ dureeMin: number; onValidate?: (rpe: number, ressenti: string) => void } | null>(null);
   const [fracOverlay, setFracOverlay] = useState<{
     titre: string; reps: number; effortSec: number; recupSec: number; vitesse?: string; pct?: string;
   } | null>(null);
@@ -212,6 +214,7 @@ function ProgrammePage() {
           onClose={() => setOpen(null)}
           onLaunchCircuit={(data) => setCircuitOverlay(data)}
           onLaunchFrac={(data) => setFracOverlay(data)}
+          onShowRpe={(data) => setRpeOverlay(data)}
         />
       )}
 
@@ -226,6 +229,16 @@ function ProgrammePage() {
           onClose={() => setCircuitOverlay(null)}
         />
       )}
+      {rpeOverlay && (
+        <RpeSurvey
+          dureeMin={rpeOverlay.dureeMin}
+          onClose={(result) => {
+            rpeOverlay.onValidate?.(result.rpe, result.ressenti);
+            setRpeOverlay(null);
+          }}
+        />
+      )}
+
       {fracOverlay && (
         <FractionneTimer
           titre={fracOverlay.titre}

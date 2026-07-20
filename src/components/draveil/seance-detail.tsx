@@ -107,12 +107,12 @@ export function SeanceDetailSheet({
   onClose,
   onLaunchCircuit,
   onLaunchFrac,
+  onShowRpe,
 }: Props) {
   const [rpe, setRpe] = useState<number>(0);
   const [ressentiText, setRessentiText] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(!!alreadyValidated);
-  const [showRpe, setShowRpe] = useState(false);
 
   const showPre = !!regenerator && !readOnly && !alreadyValidated;
   const [prePhase, setPrePhase] = useState<boolean>(showPre);
@@ -348,15 +348,7 @@ export function SeanceDetailSheet({
               )}
             </div>
 
-            {showRpe && (
-              <RpeSurvey
-                dureeMin={Math.round((activeSeance?.blocs?.reduce((acc,b)=>acc+(b.duree||0),0)||3000)/60)}
-                onClose={(result) => {
-                  setShowRpe(false);
-                  validate(false, result.rpe, result.ressenti);
-                }}
-              />
-            )}
+            {/* RpeSurvey rendu au niveau root via onShowRpe */}
 
             <div className="space-y-3">
               {(activeSeance.blocs ?? []).map((b, i) => (
@@ -371,7 +363,7 @@ export function SeanceDetailSheet({
               <div className="mt-6 space-y-3">
                 {/* Bouton validation principal → ouvre le sondage RPE */}
                 <button
-                  onClick={() => setShowRpe(true)}
+                  onClick={() => onShowRpe?.({ dureeMin: Math.round((activeSeance?.blocs?.reduce((acc,b)=>acc+(b.duree||0),0)||3000)/60), onValidate: (rpe, ressenti) => validate(false, rpe, ressenti) })}
                   disabled={saving}
                   className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-4 text-sm font-bold text-white shadow-brand transition active:scale-[0.98] disabled:opacity-40"
                 >
@@ -427,6 +419,7 @@ function BlocCard({
   readOnly?: boolean;
   onLaunchCircuit?: (data: any) => void;
   onLaunchFrac?: (data: any) => void;
+  onShowRpe?: (data: { dureeMin: number; onValidate: (rpe: number, ressenti: string) => void }) => void;
 }) {
   const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
   const steps: Bloc[] = bloc.sousBlocs ?? [];

@@ -1232,7 +1232,7 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
 
   // ── SEMAINE 1 : Réveil — body weight qualité + endurance ─────────────────
   if(weekIdx===0){
-    const nT = fv(menager?2:3, ressenti);
+    const nT = ressenti==='enforme' ? (menager?2:3) : 2;
     const renfo = {
       titre:`Circuit Réveil — ${nT} passages`, icone:'💪',
       detail:`<strong>${nT} passages · 30s effort · 30s récup · 90s récup entre passages</strong><br>Sur chaque exercice : 30 secondes à fond, 30 secondes de récup, puis exercice suivant. Quand tous les exercices sont faits : 90s récup et tu recommences.`,
@@ -1261,10 +1261,10 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
       ]
     };
     const nC = fv(2, ressenti);
-    const cardio = {titre:`Cardio soutenu — ${nC}×8 min`, icone:'🏃', duree:480,
-      detail:`<strong>${nC} × 8 minutes</strong> à <strong>${vit(vma,pctS)} km/h (${allure(vma,pctS)}/km)</strong><br><strong>3 min récup active</strong> (marche) entre les blocs.<br>Effort soutenu — tu sens l'effort mais tu tiens les 8 min.`,
-      note:`Groupe ${gr} · ${Math.round(pctS*100)}% VMA · Reveil cardio-vasculaire`};
-    return _build(weekIdx,'S1 — Réveil musculaire + Endurance','50-55 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
+    const cardio = {titre:`Cardio progressif — ${nC}×5 min`, icone:'🏃', duree:300,
+      detail:`<strong>${nC} × 5 minutes</strong> à <strong>${vit(vma,0.65)} km/h (${allure(vma,0.65)}/km)</strong><br><strong>3 min récup active</strong> (marche) entre les blocs.<br>Allure conversation — tu dois pouvoir parler. L'objectif c'est de finir sans être épuisé.`,
+      note:`Groupe ${gr} · 65% VMA · S1 = réveiller le cardio, pas le détruire`};
+    return _build(weekIdx,'S1 — Réveil musculaire + Cardio progressif','45-50 min',ressenti,noteImpact,[echauffRenfo(),renfo,cardio,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
   }
 
   // ── SEMAINE 2 : Explosivité + Fractionné moyen ────────────────────────────
@@ -1478,11 +1478,11 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
 
   // ── SEMAINE 1 : Base aérobie + Gainage ───────────────────────────────────
   if(weekIdx===0){
-    const dureeC = fv(20, ressenti);
+    const dureeC = fv(15, ressenti);
     const cardio = {titre:`Endurance continue — ${dureeC} min`, icone:'🏃', duree:dureeC*60,
       detail:`<strong>${dureeC} minutes</strong> à <strong>${vit(vma,pctF)} km/h (${allure(vma,pctF)}/km)</strong><br>`+
-        (si?'Marche rapide ou vélo si course inconfortable.':'Allure conversation — tu dois pouvoir parler facilement tout du long.'),
-      note:`Groupe ${gr} · ${Math.round(pctF*100)}% VMA · Construction base aérobie`};
+        (si?'Marche rapide ou vélo si course inconfortable.':'Allure conversation — parle normalement tout du long. Pas d\'essoufflement.'),
+      note:`Groupe ${gr} · ${Math.round(pctF*100)}% VMA · S1 = reprise en douceur — on construit sur le long terme`};
     const nT = fv(menager?2:3, ressenti);
     const renfoL = {
       titre:`Gainage et stabilité — ${nT} passages`, icone:'🔷',
