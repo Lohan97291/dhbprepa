@@ -1246,9 +1246,6 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
         exo('Fentes alternées','🦵',
           '<strong>30s — alterne G/D :</strong><br>① Grand pas en avant, genou avant à 90°, genou arrière près du sol<br>② Descente <strong>2s</strong>, genou avant dans l\'axe du pied<br>③ Remontée en poussant sur le talon avant',
           'Genou avant ne dépasse pas la pointe du pied'),
-        exo('Gainage ventral','🔷',
-          '<strong>30s :</strong><br>① Appui avant-bras et pointes de pieds, coudes sous les épaules<br>② Corps aligné tête-talons, serre abdos ET fessiers<br>③ Respire normalement — pas en apnée',
-          'Fesses ni trop hautes ni qui s\'affaissent'),
         exo('Bird Dog','🔷',
           '<strong>10 reps/côté :</strong><br>① À quatre pattes, dos plat, regard vers le sol<br>② Tends simultanément bras droit + jambe gauche<br>③ Tiens <strong>3 secondes</strong>, bassin horizontal<br>④ Reviens lentement puis côté opposé',
           'Ne laisse pas le dos se creuser — sens la contraction profonde', 'bird_dog'),
@@ -1410,7 +1407,9 @@ export function genIndivCardio(weekIdx, joueur, ressenti='normal'){
       exo('Saut en longueur + réception contrôlée','⚡',
         '<strong>5 reps/jambe :</strong><br>① Saute vers l\'avant · Réception sur une jambe · Tiens 3s<br>② Léger et explosif — activation pré-collectif<br>③ Genoux dans l\'axe à chaque atterrissage',
         'Activation des réceptions avant la reprise collective'),
-      exo('Gainage 360°','🔷','<strong>30s ventral + 30s latéral D + 30s latéral G :</strong><br>Enchaîne sans pause · Activation du gainage','Activation complète en une seule mini-série'),
+      exo('Pallof Press','🔷',
+        '<strong>10 reps/côté :</strong><br>① Élastique fixé à hauteur poitrine · Debout de côté<br>② Tends les bras lentement — résiste à la rotation<br>③ Sans élastique : gainage latéral avec rotation contrôlée<br>④ Activation anti-rotation pré-collectif',
+        'Anti-rotation — activation légère avant la reprise', 'pallof_press'),
     ]
   };
   const nR = fv(8, ressenti);
@@ -1492,10 +1491,13 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
       titre:`Gainage et stabilité — ${nT} passages`, icone:'🔷',
       detail:`<strong>${nT} passages · 30s effort · 30s récup</strong>`,
       sousBlocs:[
-        exo('Gainage ventral','🔷','<strong>30s :</strong> Avant-bras, corps aligné · Serre abdos + fessiers · Respire','Dos plat — ni trop haut ni qui s\'affaisse'),
-        exo('Gainage latéral','🔷','<strong>30s/côté :</strong> Avant-bras, bassin décollé · Corps aligné','Hanche haute pendant toute la durée'),
         exo('Pont fessier bilatéral','🍑','<strong>30s reps :</strong> Monte les hanches fort · Descente lente 3s','Serre les fessiers — pas le bas du dos'),
-        exo('Équilibre unipodal','🦶','<strong>30s/pied :</strong> Genou souple · Ferme les yeux si trop facile','Genou jamais verrouillé'),
+        exo('Dead Bug','🔷',
+          '<strong>8 reps/côté :</strong><br>① Allongé dos · Bras vers plafond · Hanches et genoux 90°<br>② Expire en descendant bras droit + jambe gauche vers le sol<br>③ Dos collé au sol · Remonte lentement · Côté opposé',
+          'Anti-extension — gainage profond différent du gainage statique PPP', 'dead_bug'),
+        exo('Pallof Press','🔷',
+          '<strong>10 reps/côté :</strong><br>① Élastique fixé à hauteur poitrine · Debout de côté<br>② Tends les bras lentement — résiste à la rotation<br>③ Sans élastique : gainage latéral avec rotation contrôlée<br>④ Alterne les côtés',
+          'Anti-rotation — complémentaire au gainage statique PPP', 'pallof_press'),
         exo('Romanian Deadlift unilatéral','🦵',
           '<strong>8 reps/jambe :</strong><br>① Debout sur une jambe, l\'autre vers l\'arrière<br>② Penche le buste en avant dos plat · Descends jusqu\'à l\'étirement ischio<br>③ Remonte en contractant le fessier · Mur si besoin pour l\'équilibre',
           'Dès S1 — le handball est asymétrique'),
@@ -1550,7 +1552,9 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
       sousBlocs:[
         exo('Nordic Curl','🦵','<strong>Max reps :</strong> Pieds coincés · Chute 5s · Mains pour revenir','Anti-blessure ischios n°1', 'nordic_curl'),
         exo('Squat pistol aidé','🦵','<strong>6 reps/jambe :</strong> Sur une jambe · Autre jambe tendue devant · Aide-toi du mur ou chaise · Descends le plus bas possible','Renforce le genou en unilatéral — simulation appuis handball'),
-        exo('Gainage latéral dynamique','🔷','<strong>40s/côté :</strong> Gainage latéral · Monte et descends le bassin lentement · Contrôle parfait','Lent et contrôlé — qualité absolue'),
+        exo('Dead Bug','🔷',
+          '<strong>8 reps/côté :</strong><br>① Allongé dos · Bras vers plafond · Hanches genoux 90°<br>② Expire en descendant bras droit + jambe gauche<br>③ Dos collé au sol tout le long<br>④ Reviens lentement · Côté opposé',
+          'Anti-extension — dos collé au sol = gainage profond', 'dead_bug'),
       ]
     };
     return _build(weekIdx,'S3 — Format handball + Ischios','55-60 min',ressenti,noteImpact,[echauffCourse('④ 4×20m carioca pour activer les appuis'),cardio1,appuisS3,cardio2,renfoL,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
@@ -1574,7 +1578,9 @@ export function genIndivRenfo(weekIdx, joueur, ressenti='normal', mat='aucun'){
         exo('Squat sauté','⚡','<strong>40s :</strong> Les jambes sont fatiguées — c\'est voulu · Saut explosif · Réception souple','Peak de fatigue musculaire — qualité des atterrissages', 'squat_saute'),
         exo('Pompes','💪','<strong>40s :</strong> Max de reps · Sur les genoux si besoin mais amplitude complète',''),
         exo('Nordic Curl','🦵','<strong>6-8 reps :</strong> Chute 5s · Maintenu même en fatigue','Ischios incontournables', 'nordic_curl'),
-        exo('Gainage 360°','🔷','<strong>30s ventral + 30s latéral D + 30s latéral G :</strong> Enchaîne sans pause','Gainage complet — on finit fort'),
+        exo('Superman','🔷',
+          '<strong>12 reps :</strong><br>① Allongé face au sol · Bras tendus devant<br>② Décolle simultanément bras + jambes · 2s en haut · Descente lente 3s<br>③ Chaîne postérieure : dos, fessiers, ischios',
+          'Chaîne postérieure — complémentaire aux circuits cardio lourds', 'superman'),
       ]
     };
     return _build(weekIdx,'S4 — Volume max cardio + Circuit','60-65 min',ressenti,noteImpact,[echauffCourse(),cardio1,appuisS4,cardio2,renfoL,ppp(weekIdx),retourCalme(ressenti==='fatigue')]);
