@@ -1,14 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Calendar, Flame, PlayCircle, Sparkles } from "lucide-react";
+import { Activity, Calendar, Flame, PlayCircle, Sparkles, X } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
-import { RpeSurvey, type RpeResult } from "@/components/draveil/rpe-survey";
-import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
-import { FractionneTimer } from "@/components/draveil/fractionne-timer";
-import { PppTimer, type PppExo } from "@/components/draveil/ppp-timer";
+import { CountUp } from "@/components/draveil/count-up";
 import {
   SeanceDetailSheet,
   type SeanceLike,
@@ -32,28 +29,6 @@ export const Route = createFileRoute("/joueur/")({
 
 function JoueurHome() {
   const { joueur } = useSession();
-  // États pour les timers au niveau root (évite les problèmes fixed/overflow)
-  const [circuitOverlay, setCircuitOverlay] = useState<{
-    titre: string;
-    exercices: CircuitExo[];
-    effortSec: number;
-    recupSec: number;
-    passages: number;
-  } | null>(null);
-  const [rpeOverlay, setRpeOverlay] = useState<{ dureeMin: number; onValidate?: (rpe: number, ressenti: string) => void } | null>(null);
-  const [fracOverlay, setFracOverlay] = useState<{
-    titre: string;
-    reps: number;
-    effortSec: number;
-    recupSec: number;
-    vitesse?: string;
-    pct?: string;
-  } | null>(null);
-  const [pppOverlay, setPppOverlay] = useState<{
-    titre: string;
-    exercices: PppExo[];
-  } | null>(null);
-
   const [openSeance, setOpenSeance] = useState<{
     seance: SeanceLike;
     weekIdx: number;
@@ -61,6 +36,15 @@ function JoueurHome() {
     date: string;
   } | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [suggestionNext, setSuggestionNext] = useState<{ message: string; conseil: string } | null>(null);
+  const CHANGELOG_VERSION = "v1.5";
+  const CHANGELOG_NOTES = [
+    "▶️ Séance guidée étape par étape avec timer plein écran",
+    "🔆 L'écran reste allumé pendant les timers",
+    "🏋️ Nouveau programme renfo/cardio alterné — 45-50 min",
+    "🛡️ Exercices bouteilles Thomas dans toutes les séances",
+  ];
   const [annonce, setAnnonce] = useState<{ text: string; date: string } | null>(
     null,
   );
@@ -82,6 +66,8 @@ function JoueurHome() {
     if (!joueur?.code || typeof window === "undefined") return;
     const key = "dhb_welcome_done_" + joueur.code;
     if (!localStorage.getItem(key)) setShowWelcome(true);
+    const clKey = "dhb_changelog_v1.5_" + joueur.code;
+    if (!localStorage.getItem(clKey)) setShowChangelog(true);
   }, [joueur?.code]);
 
   function closeWelcome() {
@@ -89,6 +75,13 @@ function JoueurHome() {
       localStorage.setItem("dhb_welcome_done_" + joueur.code, "1");
     }
     setShowWelcome(false);
+  }
+
+  function closeChangelog() {
+    if (joueur?.code && typeof window !== "undefined") {
+      localStorage.setItem("dhb_changelog_v1.5_" + joueur.code, "1");
+    }
+    setShowChangelog(false);
   }
 
   const today = useMemo(() => new Date(), []);
@@ -249,7 +242,7 @@ function JoueurHome() {
           <GlassCard className="divide-y divide-white/5 p-0">
             {validated
               .slice()
-              .sort((a, b) => (b.ts ?? b.date ?? 0) > (a.ts ?? a.date ?? 0) ? 1 : -1)
+              .sort((a, b) => b.ts - a.ts)
               .slice(0, 4)
               .map((s, i) => (
                 <div
@@ -300,57 +293,68 @@ function JoueurHome() {
                 }
           }
           onClose={() => setOpenSeance(null)}
-          onLaunchCircuit={(data) => setCircuitOverlay(data)}
-          onLaunchFrac={(data) => setFracOverlay(data)}
-          onLaunchPpp={(data) => setPppOverlay(data)}
-          onShowRpe={(data) => setRpeOverlay(data)}
-        />
-      )}
-
-      {/* Timers au niveau root — pas bloqués par overflow du sheet */}
-      {circuitOverlay && (
-        <CircuitTimer
-          titre={circuitOverlay.titre}
-          exercices={circuitOverlay.exercices}
-          effortSec={circuitOverlay.effortSec}
-          recupSec={circuitOverlay.recupSec}
-          recupPassageSec={90}
-          passages={circuitOverlay.passages}
-          onClose={() => setCircuitOverlay(null)}
-        />
-      )}
-      {rpeOverlay && (
-        <RpeSurvey
-          dureeMin={rpeOverlay.dureeMin}
-          onClose={(result) => {
-            rpeOverlay.onValidate?.(result.rpe, result.ressenti);
-            setRpeOverlay(null);
-          }}
-        />
-      )}
-
-      {fracOverlay && (
-        <FractionneTimer
-          titre={fracOverlay.titre}
-          reps={fracOverlay.reps}
-          effortSec={fracOverlay.effortSec}
-          recupSec={fracOverlay.recupSec}
-          vitesse={fracOverlay.vitesse}
-          pct={fracOverlay.pct}
-          onClose={() => setFracOverlay(null)}
-        />
-      )}
-
-      {pppOverlay && (
-        <PppTimer
-          titre={pppOverlay.titre}
-          exercices={pppOverlay.exercices}
-          onClose={() => setPppOverlay(null)}
         />
       )}
 
       {showWelcome && (
         <WelcomeSlides prenom={joueur.prenom} onClose={closeWelcome} />
+      )}
+
+      {/* Changelog mise à jour */}
+      {showChangelog && !showWelcome && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[150] flex flex-col items-end justify-end bg-black/70 backdrop-blur-sm pb-safe"
+          onClick={closeChangelog}
+        >
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            transition={{ type: "spring", damping: 26, stiffness: 260 }}
+            className="w-full max-w-md rounded-t-3xl border-t border-white/10 bg-[color:var(--background)] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
+              Mise à jour {CHANGELOG_VERSION}
+            </div>
+            <h3 className="mb-4 font-display text-xl font-black tracking-tight">
+              Nouveautés 🛠️
+            </h3>
+            <ul className="space-y-3 mb-6">
+              {CHANGELOG_NOTES.map((note, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--draveil)]" />
+                  {note}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={closeChangelog}
+              className="w-full rounded-2xl gradient-brand py-3.5 text-sm font-bold text-white"
+            >
+              C'est parti 💪
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Suggestion séance suivante */}
+      {suggestionNext && (
+        <GlassCard className="mx-4 mb-4 border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-1">
+                💡 Pour ta prochaine séance
+              </div>
+              <p className="text-sm font-semibold text-foreground">{suggestionNext.message}</p>
+              <p className="text-xs text-muted-foreground mt-1">{suggestionNext.conseil}</p>
+            </div>
+            <button onClick={() => setSuggestionNext(null)} className="text-muted-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </GlassCard>
       )}
     </div>
   );
@@ -426,7 +430,7 @@ function StatTile({
       <div
         className={`mt-1 font-display font-black tracking-tight text-foreground ${small ? "text-sm" : "text-xl"}`}
       >
-        {value}
+        {typeof value === "number" ? <CountUp to={value} /> : value}
         {unit && (
           <span className="ml-1 text-[10px] font-semibold text-muted-foreground">
             {unit}
