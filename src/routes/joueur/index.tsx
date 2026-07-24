@@ -5,10 +5,6 @@ import { Activity, Calendar, Flame, PlayCircle, Sparkles, X } from "lucide-react
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
-import { RpeSurvey, type RpeResult } from "@/components/draveil/rpe-survey";
-import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
-import { FractionneTimer } from "@/components/draveil/fractionne-timer";
-import { PppTimer, type PppExo } from "@/components/draveil/ppp-timer";
 import {
   SeanceDetailSheet,
   type SeanceLike,
@@ -34,27 +30,7 @@ export const Route = createFileRoute("/joueur/")({
 
 function JoueurHome() {
   const { joueur } = useSession();
-  // États pour les timers au niveau root (évite les problèmes fixed/overflow)
-  const [circuitOverlay, setCircuitOverlay] = useState<{
-    titre: string;
-    exercices: CircuitExo[];
-    effortSec: number;
-    recupSec: number;
-    passages: number;
-  } | null>(null);
-  const [rpeOverlay, setRpeOverlay] = useState<{ dureeMin: number; onValidate?: (rpe: number, ressenti: string) => void } | null>(null);
-  const [fracOverlay, setFracOverlay] = useState<{
-    titre: string;
-    reps: number;
-    effortSec: number;
-    recupSec: number;
-    vitesse?: string;
-    pct?: string;
-  } | null>(null);
-  const [pppOverlay, setPppOverlay] = useState<{
-    titre: string;
-    exercices: PppExo[];
-  } | null>(null);
+  // Timers gérés directement par SeancePlayer (Lovable)
 
   const [openSeance, setOpenSeance] = useState<{
     seance: SeanceLike;
@@ -75,14 +51,14 @@ function JoueurHome() {
   const [suggestionNext, setSuggestionNext] = useState<{ message: string; conseil: string; rythme: number } | null>(null);
 
   // Changelog : version actuelle — afficher une seule fois
-  const CHANGELOG_VERSION = "v1.4";
+  const CHANGELOG_VERSION = "v1.5";
   const CHANGELOG_NOTES = [
     "🔆 L'écran reste allumé pendant les timers",
     "🤕 Signaler plusieurs zones de douleur",
     "🏋️ Nouveau programme simplifié 45-50 min",
     "⚡ Choix du rythme effort/récup avant chaque séance",
-    "🛡️ Exercices bouteilles Thomas dans TOUTES les séances",
-    "🖼️ Illustrations pour chaque exercice de prévention",
+    "🛡️ Exercices bouteilles Thomas dans toutes les séances",
+    "▶️ Séance guidée étape par étape avec timer",
   ];
 
   useEffect(() => {
@@ -344,63 +320,17 @@ function JoueurHome() {
                   const sessions = genPhase2IndivSessions(
                     openSeance.weekIdx,
                     joueur,
-                    ressenti,
-                    mat,
+                    null,
+                    rythmeChoisi,
                   );
                   return sessions[openSeance.sessionIdx] as SeanceLike;
                 }
           }
           onClose={() => setOpenSeance(null)}
-          onLaunchCircuit={(data) => setCircuitOverlay(data)}
-          onLaunchFrac={(data) => setFracOverlay(data)}
-          onLaunchPpp={(data) => setPppOverlay(data)}
-          onShowRpe={(data) => setRpeOverlay(data)}
         />
       )}
 
-      {/* Timers au niveau root — pas bloqués par overflow du sheet */}
-      {circuitOverlay && (
-        <CircuitTimer
-          titre={circuitOverlay.titre}
-          exercices={circuitOverlay.exercices}
-          effortSec={circuitOverlay.effortSec}
-          recupSec={circuitOverlay.recupSec}
-          recupPassageSec={90}
-          passages={circuitOverlay.passages}
-          onClose={() => setCircuitOverlay(null)}
-        />
-      )}
-      {rpeOverlay && (
-        <RpeSurvey
-          dureeMin={rpeOverlay.dureeMin}
-          onClose={(result) => {
-            if (result.suggestion) setSuggestionNext(result.suggestion);
-            rpeOverlay.onValidate?.(result.rpe, result.ressenti);
-            setRpeOverlay(null);
-          }}
-        />
-        />
-      )}
 
-      {fracOverlay && (
-        <FractionneTimer
-          titre={fracOverlay.titre}
-          reps={fracOverlay.reps}
-          effortSec={fracOverlay.effortSec}
-          recupSec={fracOverlay.recupSec}
-          vitesse={fracOverlay.vitesse}
-          pct={fracOverlay.pct}
-          onClose={() => setFracOverlay(null)}
-        />
-      )}
-
-      {pppOverlay && (
-        <PppTimer
-          titre={pppOverlay.titre}
-          exercices={pppOverlay.exercices}
-          onClose={() => setPppOverlay(null)}
-        />
-      )}
 
       {showWelcome && (
         <WelcomeSlides prenom={joueur.prenom} onClose={closeWelcome} />
