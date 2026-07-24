@@ -79,36 +79,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content:
-          "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
       },
       { name: "theme-color", content: "#003b28" },
       { title: "DHB Prépa — Draveil Handball" },
       {
         name: "description",
-        content:
-          "Programme de préparation physique personnalisé pour les joueurs et coachs du Draveil Handball.",
+        content: "Programme de préparation physique personnalisé pour les joueurs et coachs du Draveil Handball.",
       },
       { property: "og:title", content: "DHB Prépa — Draveil Handball" },
       {
         property: "og:description",
-        content:
-          "Ton programme de prépa perso : allures VMA, renfo, PPP, stats et suivi coach.",
+        content: "Ton programme de prépa perso : allures VMA, renfo, PPP, stats et suivi coach.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
-        crossOrigin: "anonymous",
-      },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap",
@@ -149,15 +139,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster
         position="top-center"
         theme="dark"
         toastOptions={{
           classNames: {
-            toast:
-              "!bg-[color:var(--background)]/95 !backdrop-blur-xl !border-white/10 !text-foreground !rounded-2xl !shadow-2xl",
+            toast: "!bg-[color:var(--background)]/95 !backdrop-blur-xl !border-white/10 !text-foreground !rounded-2xl !shadow-2xl",
           },
         }}
       />

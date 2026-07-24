@@ -1,14 +1,36 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
-import { X, Clock, MapPin, CheckCircle2, PlayCircle } from "lucide-react";
+import { X, Clock, MapPin, CheckCircle2, Play } from "lucide-react";
 
 import type { Joueur } from "@/lib/supabase";
 import { sbSaveJoueur } from "@/lib/supabase";
+import { sendOneSignalNotif } from "@/lib/onesignal";
 import { successPing, haptic } from "@/lib/draveil/haptic";
 import { toast } from "sonner";
 import { session } from "@/lib/draveil/session";
 import { InlineTimer } from "./inline-timer";
-import { SeancePlayer } from "./seance-player";
+import { RpeSurvey, type RpeResult } from "./rpe-survey";
+
+/** Un exercice peut venir de core.ts (cles n/d/note) ou du format long (nom/detail/note). */
+interface Exo {
+  nom?: string;
+  detail?: string;
+  note?: string;
+  n?: string;
+  d?: string;
+  /** Etapes d'execution detaillees. */
+  exec?: string[];
+  /** Erreur classique a eviter. */
+  erreur?: string;
+  series?: number;
+  duree?: number;
+  reps?: number;
+  recup?: number;
+  cote?: boolean;
+}
+
+const exoNom = (e: Exo) => e.nom ?? e.n ?? "";
+const exoDetail = (e: Exo) => e.detail ?? e.d ?? "";
 
 interface Bloc {
   titre: string;
@@ -17,7 +39,9 @@ interface Bloc {
   icone?: string;
   duree?: number;
   isPPP?: boolean;
-  pppExos?: Array<{ nom: string; detail?: string }>;
+  pppExos?: Exo[];
+  /** Exercices du circuit, affiches etape par etape. */
+  sousBlocs?: Bloc[];
 }
 
 // Structural shape of a generated session (matches core.ts return values).
@@ -68,6 +92,10 @@ interface Props {
    */
   regenerator?: (ressenti: Ressenti, materiel: MatKey) => SeanceLike;
   onClose: () => void;
+  onLaunchCircuit?: (data: any) => void;
+  onLaunchFrac?: (data: any) => void;
+  onLaunchPpp?: (data: any) => void;
+  onShowRpe?: (data: { dureeMin: number; onValidate: (rpe: number, ressenti: string) => void }) => void;
 }
 
 export function SeanceDetailSheet({
@@ -80,6 +108,10 @@ export function SeanceDetailSheet({
   readOnly,
   regenerator,
   onClose,
+  onLaunchCircuit,
+  onLaunchFrac,
+  onLaunchPpp,
+  onShowRpe,
 }: Props) {
   const [rpe, setRpe] = useState<number>(0);
   const [ressentiText, setRessentiText] = useState<string>("");
@@ -91,7 +123,6 @@ export function SeanceDetailSheet({
   const [preRessenti, setPreRessenti] = useState<Ressenti>("normal");
   const [preMat, setPreMat] = useState<MatKey>(defaultMatFromJoueur(joueur));
   const [activeSeance, setActiveSeance] = useState<SeanceLike>(seance);
-  const [playing, setPlaying] = useState(false);
 
   function confirmPre() {
     if (regenerator) {
@@ -101,34 +132,23 @@ export function SeanceDetailSheet({
     setPrePhase(false);
   }
 
-  if (playing && joueur) {
-    return (
-      <SeancePlayer
-        seance={activeSeance}
-        joueur={joueur}
-        weekIdx={weekIdx}
-        sessionIdx={sessionIdx}
-        date={date ?? new Date().toISOString().split("T")[0]}
-        onExit={() => {
-          setPlaying(false);
-          onClose();
-        }}
-      />
-    );
-  }
-
-  async function validate(missed = false) {
+  async function validate(missed = false, rpeOverride?: number, ressentiOverride?: string) {
     if (saving || !joueur) return;
+    // Si le sondage fournit un RPE, on l'utilise
+    if (rpeOverride !== undefined) setRpe(rpeOverride);
+    if (ressentiOverride !== undefined) setRessentiText(ressentiOverride);
     setSaving(true);
+    const finalRpe = rpeOverride ?? rpe;
+    const finalRessenti = ressentiOverride ?? (showPre ? preRessenti : ressentiText || undefined);
     const list = joueur.seances_validees ?? [];
     const entry = {
       date: date ?? new Date().toISOString().split("T")[0],
       weekIdx,
       sessionIdx,
-      rpe: missed ? 0 : rpe,
+      rpe: missed ? 0 : finalRpe,
       missed,
       ts: Date.now(),
-      ressenti: showPre ? preRessenti : ressentiText || undefined,
+      ressenti: finalRessenti,
     };
     const next: Joueur = {
       ...joueur,
@@ -149,7 +169,13 @@ export function SeanceDetailSheet({
     } else {
       successPing();
       toast.success("Séance validée 💪", {
-        description: `RPE ${rpe}/10 enregistré`,
+        description: `RPE ${finalRpe}/10 enregistré`,
+      });
+      // Notifier le coach
+      sendOneSignalNotif({
+        title: "✅ Séance validée",
+        body: `${joueur.prenom ?? joueur.code} a fini sa séance (RPE ${finalRpe}/10)`,
+        target: "coach",
       });
       try {
         if (
@@ -161,7 +187,7 @@ export function SeanceDetailSheet({
           }
           if (Notification.permission === "granted") {
             new Notification("Séance validée 💪", {
-              body: `Super boulot ! RPE ${rpe}/10`,
+              body: `Super boulot ! RPE ${finalRpe}/10`,
               icon: "/icon-512.png",
             });
           }
@@ -326,115 +352,35 @@ export function SeanceDetailSheet({
               )}
             </div>
 
-            {!readOnly && (
-              <div className="mb-4">
-                <button
-                  onClick={() => setPlaying(true)}
-                  className="group flex w-full items-center justify-center gap-3 rounded-2xl gradient-brand py-4 text-base font-bold uppercase tracking-widest text-white shadow-brand transition hover:brightness-110"
-                >
-                  <PlayCircle className="h-6 w-6" />
-                  Démarrer la séance guidée
-                </button>
-                <div className="mt-3">
-                  <InlineTimer reps={6} effortSec={120} recupSec={60} />
-                </div>
-              </div>
-            )}
+            {/* RpeSurvey rendu au niveau root via onShowRpe */}
 
             <div className="space-y-3">
               {(activeSeance.blocs ?? []).map((b, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-white/8 bg-white/[0.025] p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-xl">{b.icone ?? "•"}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-foreground">
-                        {b.titre}
-                      </div>
-                      {b.detail && (
-                        <div
-                          className="mt-2 text-sm leading-relaxed text-foreground/85 [&_strong]:font-semibold [&_strong]:text-foreground"
-                          dangerouslySetInnerHTML={{ __html: b.detail }}
-                        />
-                      )}
-                      {b.isPPP && b.pppExos && (
-                        <ul className="mt-2 space-y-1 text-sm text-foreground/85">
-                          {b.pppExos.map((e, k) => (
-                            <li key={k}>
-                              <span className="font-semibold text-foreground">
-                                {e.nom}
-                              </span>
-                              {e.detail ? ` — ${e.detail}` : ""}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {b.note && (
-                        <div className="mt-2 text-xs italic text-muted-foreground">
-                          {b.note}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <BlocCard key={i} bloc={b} index={i} readOnly={readOnly}
+                onLaunchCircuit={onLaunchCircuit}
+                onLaunchFrac={onLaunchFrac}
+                onLaunchPpp={onLaunchPpp}
+              />
               ))}
             </div>
 
             {readOnly ? null : !saved ? (
-              <div className="mt-6 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Valider la séance
-                </div>
-                <div className="mb-3 text-xs text-muted-foreground">
-                  Difficulté ressentie (RPE)
-                </div>
-                <div className="mb-4 flex items-center gap-1.5">
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setRpe(n)}
-                      className={`h-9 flex-1 rounded-lg text-xs font-bold transition ${
-                        rpe >= n
-                          ? "text-white shadow-brand"
-                          : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08]"
-                      }`}
-                      style={
-                        rpe >= n
-                          ? {
-                              background: `linear-gradient(180deg, hsl(${140 - n * 12} 70% 45%), hsl(${140 - n * 12} 70% 38%))`,
-                            }
-                          : undefined
-                      }
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  value={ressentiText}
-                  onChange={(e) => setRessentiText(e.target.value)}
-                  placeholder="Ressenti, sensations (optionnel)"
-                  className="w-full resize-none rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[color:var(--draveil)] focus:outline-none"
-                  rows={2}
-                />
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => validate(true)}
-                    disabled={saving}
-                    className="flex-1 rounded-xl border border-white/8 bg-white/[0.02] py-3 text-sm font-medium text-muted-foreground transition hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
-                  >
-                    Séance manquée
-                  </button>
-                  <button
-                    onClick={() => validate(false)}
-                    disabled={saving || rpe === 0}
-                    className="flex-[2] rounded-xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition hover:brightness-110 disabled:opacity-40"
-                  >
-                    {saving ? "Enregistrement…" : "Valider la séance"}
-                  </button>
-                </div>
+              <div className="mt-6 space-y-3">
+                {/* Bouton validation principal → ouvre le sondage RPE */}
+                <button
+                  onClick={() => onShowRpe?.({ dureeMin: Math.round((activeSeance?.blocs?.reduce((acc,b)=>acc+(b.duree||0),0)||3000)/60), onValidate: (rpe, ressenti) => validate(false, rpe, ressenti) })}
+                  disabled={saving}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-4 text-sm font-bold text-white shadow-brand transition active:scale-[0.98] disabled:opacity-40"
+                >
+                  ✅ J'ai fait ma séance — Valider
+                </button>
+                <button
+                  onClick={() => validate(true)}
+                  disabled={saving}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] py-3 text-sm font-medium text-muted-foreground transition hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
+                >
+                  ❌ Séance manquée
+                </button>
               </div>
             ) : (
               <motion.div
@@ -450,5 +396,293 @@ export function SeanceDetailSheet({
         )}
       </motion.div>
     </AnimatePresence>
+  );
+}
+/** Formate une duree en secondes vers "10 min" ou "45 s". */
+function fmtDuree(sec: number): string {
+  if (sec >= 60) {
+    const m = Math.round(sec / 60);
+    return `${m} min`;
+  }
+  return `${sec} s`;
+}
+
+/**
+ * Carte d'un bloc de seance.
+ * Affiche le detail, un chrono si le bloc a une duree,
+ * puis les exercices etape par etape (circuit ou PPP).
+ */
+function BlocCard({
+  bloc,
+  index,
+  readOnly,
+  onLaunchCircuit,
+  onLaunchFrac,
+  onLaunchPpp,
+}: {
+  bloc: Bloc;
+  index: number;
+  readOnly?: boolean;
+  onLaunchCircuit?: (data: any) => void;
+  onLaunchFrac?: (data: any) => void;
+  onLaunchPpp?: (data: any) => void;
+  onShowRpe?: (data: { dureeMin: number; onValidate: (rpe: number, ressenti: string) => void }) => void;
+}) {
+  const exos: Exo[] = bloc.isPPP && bloc.pppExos ? bloc.pppExos : [];
+  const steps: Bloc[] = bloc.sousBlocs ?? [];
+  const [expanded, setExpanded] = useState(false);
+
+  // Parser passages
+  const passagesMatch = bloc.titre?.match(/(\d+)\s*passage/i);
+  const nbPassages = passagesMatch ? parseInt(passagesMatch[1]) : 3;
+
+  // Parser fractionné
+  const fracMatch = bloc.titre?.match(/(\d+)×(\d+)\s*(min|s)/i);
+  const fracReps = fracMatch ? parseInt(fracMatch[1]) : 0;
+  const fracDurNum = fracMatch ? parseInt(fracMatch[2]) : 0;
+  const fracDurUnit = fracMatch?.[3]?.toLowerCase() === 'min' ? 60 : 1;
+  const fracEffortSec = fracDurNum * fracDurUnit;
+  const fracRecupMatch = bloc.detail?.match(/(\d+)\s*(min|s)\s*r[ée]cup/i);
+  const fracRecupNum = fracRecupMatch ? parseInt(fracRecupMatch[1]) : 0;
+  const fracRecupUnit = fracRecupMatch?.[2]?.toLowerCase() === 'min' ? 60 : 1;
+  const fracRecupSec = fracRecupNum * fracRecupUnit || 90;
+  const vitesseMatch = bloc.detail?.match(/([\d.]+)\s*km\/h/);
+  const paceMatch = bloc.detail?.match(/\(([\d]+'[\d]+")\/km\)/);
+  const pctMatch = bloc.detail?.match(/(\d+)%\s*VMA/);
+  const vitesseStr = vitesseMatch ? `${vitesseMatch[1]} km/h${paceMatch ? ` (${paceMatch[1]}/km)` : ''}` : undefined;
+  const pctStr = pctMatch ? `${pctMatch[1]}% VMA` : undefined;
+  const isFractionne = fracReps > 0 && fracEffortSec > 0 && (bloc.icone === '🏃' || bloc.icone === '⚡');
+
+  // Parser effort/recup pour circuit
+  const effortMatch = bloc.detail?.match(/(\d+)s effort/);
+  const recupMatch  = bloc.detail?.match(/(\d+)s récup/);
+  const effortSec = effortMatch ? parseInt(effortMatch[1]) : 30;
+  const recupSec  = recupMatch  ? parseInt(recupMatch[1])  : 30;
+
+
+
+  const hasDetails = steps.length > 0 || exos.length > 0;
+
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.025] overflow-hidden">
+
+      {/* ── En-tête cliquable ───────────────────────────────────────── */}
+      <button
+        className="flex w-full items-start gap-3 p-4 text-left"
+        onClick={() => hasDetails && setExpanded(e => !e)}
+      >
+        <div className="text-xl shrink-0 mt-0.5">{bloc.icone ?? "•"}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            {bloc.duree ? (
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {fmtDuree(bloc.duree)}
+              </span>
+            ) : null}
+            {vitesseStr && (
+              <span className="rounded-full bg-[color:var(--draveil)]/15 px-2 py-0.5 text-[10px] font-bold text-[color:var(--draveil-glow)]">
+                {vitesseStr}
+              </span>
+            )}
+            {steps.length > 0 && (
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                {steps.length} exercices · {nbPassages} passages
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 font-semibold text-foreground leading-snug">
+            {bloc.titre.replace(/\[A\] |\[B\] /g, '')}
+          </div>
+          {bloc.detail && !hasDetails && (
+            <div
+              className="mt-1.5 text-sm leading-relaxed text-foreground/75 [&_strong]:font-semibold [&_strong]:text-foreground"
+              dangerouslySetInnerHTML={{ __html: bloc.detail }}
+            />
+          )}
+          {bloc.detail && hasDetails && !expanded && (
+            <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
+              {bloc.detail.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()}
+            </div>
+          )}
+        </div>
+        {hasDetails && (
+          <div className={`shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+            ▾
+          </div>
+        )}
+      </button>
+
+      {/* ── Contenu expandable ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {(expanded || !hasDetails) && hasDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-3">
+
+              {/* Description complète */}
+              {bloc.detail && (
+                <div
+                  className="text-sm leading-relaxed text-foreground/75 [&_strong]:font-semibold [&_strong]:text-foreground"
+                  dangerouslySetInnerHTML={{ __html: bloc.detail }}
+                />
+              )}
+
+              {/* Exercices du circuit */}
+              {steps.length > 0 && (
+                <div className="space-y-2">
+                  {steps.map((s, k) => (
+                    <div key={k} className="rounded-xl bg-white/[0.04] p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[10px] font-black text-[color:var(--draveil-glow)]">
+                          {k + 1}
+                        </span>
+                        <span className="text-sm font-bold text-foreground">
+                          {s.titre.replace(/\[A\] |\[B\] /g, '')}
+                        </span>
+                        {(s as Bloc).videoUrl && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open((s as Bloc).videoUrl, '_blank', 'noopener,noreferrer');
+                            }}
+                            className="ml-auto shrink-0 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 active:bg-red-500/25"
+                          >
+                            ▶ vidéo
+                          </button>
+                        )}
+                      </div>
+                      {s.detail && (
+                        <div
+                          className="text-xs leading-relaxed text-foreground/65 [&_strong]:text-foreground/90 [&_strong]:font-semibold"
+                          dangerouslySetInnerHTML={{ __html: s.detail }}
+                        />
+                      )}
+                      {s.note && (
+                        <div className="mt-1.5 text-[11px] text-[color:var(--draveil-glow)]/80 italic">
+                          💡 {s.note}
+                        </div>
+                      )}
+                      {(s as Bloc).variante && (
+                        <div className="mt-1.5 text-[11px] text-yellow-400/70">
+                          Variante : {(s as Bloc).variante}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Exercices PPP */}
+              {exos.length > 0 && (
+                <div className="space-y-2">
+                  {exos.map((e, k) => (
+                    <div key={k} className="rounded-xl bg-white/[0.04] p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--draveil)]/20 text-[10px] font-black text-[color:var(--draveil-glow)]">
+                          {k + 1}
+                        </span>
+                        <span className="text-sm font-bold text-foreground">{exoNom(e)}</span>
+                        {(e as any).videoUrl && (
+                          <button
+                            onClick={() => window.open((e as any).videoUrl, '_blank', 'noopener,noreferrer')}
+                            className="shrink-0 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 active:bg-red-500/25"
+                          >
+                            ▶ vidéo
+                          </button>
+                        )}
+                      </div>
+                      {exoDetail(e) && (
+                        <div className="text-xs text-foreground/65">{exoDetail(e)}</div>
+                      )}
+                      {e.exec && e.exec.length > 0 && (
+                        <ol className="mt-1.5 space-y-0.5">
+                          {e.exec.map((line, m) => (
+                            <li key={m} className="flex gap-1.5 text-[11px] text-foreground/60">
+                              <span className="font-bold text-[color:var(--draveil-glow)] shrink-0">{m+1}.</span>
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                      {e.note && <div className="mt-1.5 text-[11px] text-muted-foreground italic">💡 {e.note}</div>}
+                      {e.erreur && <div className="mt-1 text-[11px] text-amber-400/80">⚠️ {e.erreur}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Bouton d'action (timer) — visible seulement si expanded ou pas de détails ── */}
+      {!readOnly && (steps.length > 0 || isFractionne || (!hasDetails && bloc.duree)) && (expanded || !hasDetails) && (
+        <div className="px-4 pb-4">
+          {steps.length > 0 && (
+            <button
+              onClick={() => onLaunchCircuit?.({
+                  titre: bloc.titre.replace(/\[A\] |\[B\] /g, ''),
+                  exercices: steps,
+                  effortSec,
+                  recupSec,
+                  passages: nbPassages,
+                })}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+            >
+              ▶ Lancer le circuit guidé · {nbPassages} passages
+            </button>
+          )}
+          {isFractionne && (
+            <button
+              onClick={() => onLaunchFrac?.({
+                  titre: bloc.titre,
+                  reps: fracReps,
+                  effortSec: fracEffortSec,
+                  recupSec: fracRecupSec,
+                  vitesse: vitesseStr,
+                  pct: pctStr,
+                })}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+            >
+              ▶ Lancer le fractionné guidé · {fracReps} répétitions
+            </button>
+          )}
+          {!hasDetails && bloc.duree && !isFractionne && (
+            <div className="mt-1">
+              <InlineTimer reps={1} effortSec={bloc.duree} recupSec={0} label={bloc.titre} />
+            </div>
+          )}
+          {exos.length > 0 && (
+            <button
+              onClick={() => onLaunchPpp?.({
+                titre: bloc.titre.replace(/\[A\] |\[B\] /g, ''),
+                exercices: exos.map((e: any) => ({
+                  titre: e.nom ?? e.n ?? '',
+                  duree: e.duree ?? 30,
+                  series: e.series ?? 1,
+                  recup: e.recup ?? 30,
+                  cote: !!e.cote,
+                  exec: e.exec,
+                  note: e.note,
+                  videoUrl: e.videoUrl,
+                })),
+              })}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand transition active:scale-[0.98]"
+            >
+              🛡️ Lancer la PPP guidée · {exos.length} exercices
+            </button>
+          )}
+        </div>
+      )}
+
+      {bloc.note && !hasDetails && (
+        <div className="px-4 pb-3 text-xs italic text-muted-foreground">{bloc.note}</div>
+      )}
+    </div>
   );
 }

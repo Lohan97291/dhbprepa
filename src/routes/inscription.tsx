@@ -15,6 +15,7 @@ import {
 } from "@/lib/draveil/core";
 import { genCode } from "@/lib/draveil/postes";
 import { sbGetJoueur, sbSaveJoueur, type Joueur } from "@/lib/supabase";
+import { sendOneSignalNotif } from "@/lib/onesignal";
 
 export const Route = createFileRoute("/inscription")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -206,6 +207,12 @@ function InscriptionPage() {
         navigate({ to: "/joueur/profil" });
       } else {
         toast.success("Inscription envoyée !");
+        // Notifier le coach qu'un nouveau joueur attend validation
+        sendOneSignalNotif({
+          title: "🆕 Nouvelle inscription",
+          body: `${joueur.prenom} ${joueur.nom} attend ta validation.`,
+          target: "coach",
+        });
         navigate({ to: "/attente", search: { code } });
       }
     } catch {

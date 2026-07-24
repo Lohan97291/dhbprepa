@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
-import { CountUp } from "@/components/draveil/count-up";
 import { sbListJoueurs, type Joueur } from "@/lib/supabase";
 import { formatDate, getPhaseActuelle, PHASES_DATES } from "@/lib/draveil/core";
 
@@ -201,7 +200,7 @@ function KPI({
         {label}
       </div>
       <div className="mt-1 font-display text-2xl font-black tracking-tight text-foreground">
-        {typeof value === "number" ? <CountUp to={value} /> : value}
+        {value}
       </div>
       {hint && (
         <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>

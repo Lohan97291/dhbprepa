@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/draveil/glass-card";
+import { sendOneSignalNotif } from "@/lib/onesignal";
 import { sbListJoueurs, sbSaveJoueur, type Joueur } from "@/lib/supabase";
 import { getPhase2Week } from "@/lib/draveil/core";
 
@@ -73,6 +74,22 @@ function CoachSemainePage() {
       .filter((x) => x.days > 10 && x.j.statut_compte !== "attente")
       .sort((a, b) => b.days - a.days);
   }, [joueurs]);
+
+
+  // Envoyer alertes coach pour les inactifs (une seule fois par session)
+  useEffect(() => {
+    if (!inactifs.length) return;
+    const key = "dhb_alerte_inactifs_" + new Date().toDateString();
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    for (const { j, days } of inactifs.slice(0, 3)) {
+      sendOneSignalNotif({
+        title: "😴 Joueur inactif",
+        body: `${j.prenom ?? j.code} n'a pas validé de séance depuis ${days} jours.`,
+        target: "coach",
+      });
+    }
+  }, [inactifs]);
 
   const labels = ["🏃 Cardio", "💪 Renfo", "🧘 Récup"];
 

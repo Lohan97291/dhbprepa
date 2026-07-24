@@ -37,6 +37,10 @@ export const session = {
   },
   setCoach(c: CoachSession | null) {
     set({ coach: c });
+    if (typeof window !== "undefined") {
+      if (c) localStorage.setItem("dhb_coach", JSON.stringify(c));
+      else localStorage.removeItem("dhb_coach");
+    }
   },
   logoutJoueur() {
     set({ joueur: null });
@@ -45,6 +49,7 @@ export const session = {
   },
   logoutCoach() {
     set({ coach: null });
+    if (typeof window !== "undefined") localStorage.removeItem("dhb_coach");
   },
   subscribe(l: Listener) {
     listeners.add(l);

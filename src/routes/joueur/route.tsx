@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { BarChart3, Calendar, Home, User } from "lucide-react";
 
 import { session, useSession } from "@/lib/draveil/session";
+import { initOneSignal } from "@/lib/onesignal";
 import { sbGetJoueur } from "@/lib/supabase";
 import { WelcomeSlides } from "@/components/draveil/welcome-slides";
 import { PageTransition } from "@/components/draveil/page-transition";
@@ -50,6 +51,12 @@ function JoueurLayout() {
       else navigate({ to: "/" });
     });
   }, [joueur, navigate]);
+
+  // Init OneSignal push notifications
+  useEffect(() => {
+    if (!joueur?.code) return;
+    initOneSignal(joueur.code, "joueur").catch(() => {});
+  }, [joueur?.code]);
 
   // Welcome check (once per joueur)
   useEffect(() => {

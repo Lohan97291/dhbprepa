@@ -12,6 +12,6 @@ export const COACHES: Record<string, Coach> = {
     nom: "LOHAN",
     role: "Directeur sportif",
     emoji: "👑",
-    defPwd: "DRAVEIL",
+    defPwd: "1312",
   },
 };

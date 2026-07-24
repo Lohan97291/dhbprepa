@@ -7,11 +7,13 @@ import {
 } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { KeyRound, Lock, LogOut, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { DhbMark } from "@/components/draveil/logo";
+import { PinInput } from "@/components/draveil/pin-input";
 import { session, useSession } from "@/lib/draveil/session";
+import { initOneSignal } from "@/lib/onesignal";
 import { PageTransition } from "@/components/draveil/page-transition";
 import { COACHES } from "@/lib/draveil/coaches";
 import { sbGetMeta, sbSaveMeta } from "@/lib/supabase";
@@ -50,8 +52,40 @@ const TABS: CTab[] = [
 function CoachLayout() {
   const navigate = useNavigate();
   const { coach } = useSession();
+  const [restoring, setRestoring] = useState(true);
+
+  // Restore coach session from localStorage
+  useEffect(() => {
+    if (coach) {
+      setRestoring(false);
+      return;
+    }
+    const saved = localStorage.getItem("dhb_coach");
+    if (saved) {
+      try {
+        session.setCoach(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem("dhb_coach");
+      }
+    }
+    setRestoring(false);
+  }, [coach]);
+
+  // Init OneSignal push notifications
+  useEffect(() => {
+    if (!coach?.id) return;
+    initOneSignal(coach.id, "coach").catch(() => {});
+  }, [coach?.id]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [pwdOpen, setPwdOpen] = useState(false);
+
+  if (restoring) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[color:var(--draveil)] border-t-transparent" />
+      </div>
+    );
+  }
 
   if (!coach) return <CoachLogin />;
 
@@ -159,29 +193,26 @@ function ChangePwdSheet({
 
   async function submit() {
     setSaving(true);
-    const stored = await sbGetMeta<string | null>(
-      "coach_pwd_" + coachId,
-      null,
-    );
-    const current = stored || COACHES[coachId]?.defPwd || "DRAVEIL";
-    if (oldP.trim().toUpperCase() !== String(current).toUpperCase()) {
+    const current = await resolvePin(coachId);
+    if (oldP.trim() !== current) {
       setSaving(false);
-      toast.error("Ancien mot de passe incorrect");
+      toast.error("Ancien code incorrect");
+      setOldP("");
       return;
     }
-    if (newP.length < 4) {
+    if (!/^\d{4}$/.test(newP)) {
       setSaving(false);
-      toast.error("Minimum 4 caractères");
+      toast.error("Le code doit faire 4 chiffres");
       return;
     }
     if (newP !== conf) {
       setSaving(false);
-      toast.error("Les mots de passe ne correspondent pas");
+      toast.error("Les codes ne correspondent pas");
       return;
     }
-    await sbSaveMeta("coach_pwd_" + coachId, newP.toUpperCase());
+    await sbSaveMeta("coach_pwd_" + coachId, newP);
     setSaving(false);
-    toast.success("Mot de passe modifié ✅");
+    toast.success("Code PIN modifié ✅");
     onClose();
   }
 
@@ -206,7 +237,7 @@ function ChangePwdSheet({
               Sécurité
             </div>
             <h3 className="mt-1 font-display text-xl font-black tracking-tight">
-              🔑 Changer le mot de passe
+              🔑 Changer le code PIN
             </h3>
           </div>
           <button
@@ -216,28 +247,25 @@ function ChangePwdSheet({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="space-y-3">
-          <input
-            type="password"
-            placeholder="Ancien mot de passe"
-            value={oldP}
-            onChange={(e) => setOldP(e.target.value)}
-            className="w-full rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-foreground focus:border-[color:var(--draveil)] focus:outline-none"
-          />
-          <input
-            type="password"
-            placeholder="Nouveau mot de passe"
-            value={newP}
-            onChange={(e) => setNewP(e.target.value)}
-            className="w-full rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-foreground focus:border-[color:var(--draveil)] focus:outline-none"
-          />
-          <input
-            type="password"
-            placeholder="Confirmer le nouveau"
-            value={conf}
-            onChange={(e) => setConf(e.target.value)}
-            className="w-full rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3 text-foreground focus:border-[color:var(--draveil)] focus:outline-none"
-          />
+        <div className="space-y-5">
+          <div>
+            <div className="mb-2 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Code actuel
+            </div>
+            <PinInput value={oldP} onChange={setOldP} />
+          </div>
+          <div>
+            <div className="mb-2 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Nouveau code
+            </div>
+            <PinInput value={newP} onChange={setNewP} />
+          </div>
+          <div>
+            <div className="mb-2 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Confirmer
+            </div>
+            <PinInput value={conf} onChange={setConf} />
+          </div>
           <button
             onClick={submit}
             disabled={saving}
@@ -251,23 +279,28 @@ function ChangePwdSheet({
   );
 }
 
+/** Retourne le PIN valide : le PIN enregistre s'il fait 4 chiffres, sinon celui par defaut. */
+async function resolvePin(coachId: string): Promise<string> {
+  const stored = await sbGetMeta<string | null>("coach_pwd_" + coachId, null);
+  if (stored && /^\d{4}$/.test(String(stored))) return String(stored);
+  return COACHES[coachId]?.defPwd || "1972";
+}
+
 function CoachLogin() {
   const navigate = useNavigate();
   const [pwd, setPwd] = useState("");
   const [loading, setLoading] = useState(false);
   const coach = COACHES.lohan;
 
-  async function submit() {
-    if (!pwd.trim()) return;
+  async function submit(code?: string) {
+    const entered = (code ?? pwd).trim();
+    if (entered.length < 4) return;
     setLoading(true);
-    const stored = await sbGetMeta<string | null>(
-      "coach_pwd_" + coach.id,
-      null,
-    );
-    const valid = stored || coach.defPwd;
+    const valid = await resolvePin(coach.id);
     setLoading(false);
-    if (pwd.trim().toUpperCase() !== String(valid).toUpperCase()) {
-      toast.error("Mot de passe incorrect");
+    if (entered !== valid) {
+      toast.error("Code incorrect");
+      setPwd("");
       return;
     }
     session.setCoach({
@@ -315,17 +348,14 @@ function CoachLogin() {
               <div className="text-xs text-muted-foreground">{coach.role}</div>
             </div>
           </div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Mot de passe
+          <label className="mb-3 block text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Code PIN
           </label>
-          <input
+          <PinInput
             autoFocus
-            type="password"
             value={pwd}
-            onChange={(e) => setPwd(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder="••••••••"
-            className="w-full rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3.5 tracking-[0.3em] text-foreground outline-none transition focus:border-[color:var(--draveil)]/60 focus:bg-white/[0.06]"
+            onChange={setPwd}
+            onComplete={(v) => submit(v)}
           />
           <div className="mt-4 flex gap-2">
             <button
@@ -335,9 +365,9 @@ function CoachLogin() {
               Annuler
             </button>
             <button
-              onClick={submit}
-              disabled={loading}
-              className="flex-[2] rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand disabled:opacity-60"
+              onClick={() => submit()}
+              disabled={loading || pwd.length < 4}
+              className="flex-[2] rounded-2xl gradient-brand py-3 text-sm font-bold text-white shadow-brand disabled:opacity-40"
             >
               {loading ? "Vérification…" : "Connexion →"}
             </button>

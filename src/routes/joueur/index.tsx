@@ -5,7 +5,10 @@ import { Activity, Calendar, Flame, PlayCircle, Sparkles } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
-import { CountUp } from "@/components/draveil/count-up";
+import { RpeSurvey, type RpeResult } from "@/components/draveil/rpe-survey";
+import { CircuitTimer, type CircuitExo } from "@/components/draveil/circuit-timer";
+import { FractionneTimer } from "@/components/draveil/fractionne-timer";
+import { PppTimer, type PppExo } from "@/components/draveil/ppp-timer";
 import {
   SeanceDetailSheet,
   type SeanceLike,
@@ -29,6 +32,28 @@ export const Route = createFileRoute("/joueur/")({
 
 function JoueurHome() {
   const { joueur } = useSession();
+  // États pour les timers au niveau root (évite les problèmes fixed/overflow)
+  const [circuitOverlay, setCircuitOverlay] = useState<{
+    titre: string;
+    exercices: CircuitExo[];
+    effortSec: number;
+    recupSec: number;
+    passages: number;
+  } | null>(null);
+  const [rpeOverlay, setRpeOverlay] = useState<{ dureeMin: number; onValidate?: (rpe: number, ressenti: string) => void } | null>(null);
+  const [fracOverlay, setFracOverlay] = useState<{
+    titre: string;
+    reps: number;
+    effortSec: number;
+    recupSec: number;
+    vitesse?: string;
+    pct?: string;
+  } | null>(null);
+  const [pppOverlay, setPppOverlay] = useState<{
+    titre: string;
+    exercices: PppExo[];
+  } | null>(null);
+
   const [openSeance, setOpenSeance] = useState<{
     seance: SeanceLike;
     weekIdx: number;
@@ -224,7 +249,7 @@ function JoueurHome() {
           <GlassCard className="divide-y divide-white/5 p-0">
             {validated
               .slice()
-              .sort((a, b) => b.ts - a.ts)
+              .sort((a, b) => (b.ts ?? b.date ?? 0) > (a.ts ?? a.date ?? 0) ? 1 : -1)
               .slice(0, 4)
               .map((s, i) => (
                 <div
@@ -275,6 +300,52 @@ function JoueurHome() {
                 }
           }
           onClose={() => setOpenSeance(null)}
+          onLaunchCircuit={(data) => setCircuitOverlay(data)}
+          onLaunchFrac={(data) => setFracOverlay(data)}
+          onLaunchPpp={(data) => setPppOverlay(data)}
+          onShowRpe={(data) => setRpeOverlay(data)}
+        />
+      )}
+
+      {/* Timers au niveau root — pas bloqués par overflow du sheet */}
+      {circuitOverlay && (
+        <CircuitTimer
+          titre={circuitOverlay.titre}
+          exercices={circuitOverlay.exercices}
+          effortSec={circuitOverlay.effortSec}
+          recupSec={circuitOverlay.recupSec}
+          recupPassageSec={90}
+          passages={circuitOverlay.passages}
+          onClose={() => setCircuitOverlay(null)}
+        />
+      )}
+      {rpeOverlay && (
+        <RpeSurvey
+          dureeMin={rpeOverlay.dureeMin}
+          onClose={(result) => {
+            rpeOverlay.onValidate?.(result.rpe, result.ressenti);
+            setRpeOverlay(null);
+          }}
+        />
+      )}
+
+      {fracOverlay && (
+        <FractionneTimer
+          titre={fracOverlay.titre}
+          reps={fracOverlay.reps}
+          effortSec={fracOverlay.effortSec}
+          recupSec={fracOverlay.recupSec}
+          vitesse={fracOverlay.vitesse}
+          pct={fracOverlay.pct}
+          onClose={() => setFracOverlay(null)}
+        />
+      )}
+
+      {pppOverlay && (
+        <PppTimer
+          titre={pppOverlay.titre}
+          exercices={pppOverlay.exercices}
+          onClose={() => setPppOverlay(null)}
         />
       )}
 
@@ -355,7 +426,7 @@ function StatTile({
       <div
         className={`mt-1 font-display font-black tracking-tight text-foreground ${small ? "text-sm" : "text-xl"}`}
       >
-        {typeof value === "number" ? <CountUp to={value} /> : value}
+        {value}
         {unit && (
           <span className="ml-1 text-[10px] font-semibold text-muted-foreground">
             {unit}
