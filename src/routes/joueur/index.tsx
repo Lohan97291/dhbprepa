@@ -5,7 +5,6 @@ import { Activity, Calendar, Flame, PlayCircle, Sparkles, X } from "lucide-react
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
-import { CountUp } from "@/components/draveil/count-up";
 import {
   SeanceDetailSheet,
   type SeanceLike,
@@ -430,7 +429,7 @@ function StatTile({
       <div
         className={`mt-1 font-display font-black tracking-tight text-foreground ${small ? "text-sm" : "text-xl"}`}
       >
-        {typeof value === "number" ? <CountUp to={value} /> : value}
+        {typeof value === "number" ? {/*CountUp*/}<span to={value} </span> : value}
         {unit && (
           <span className="ml-1 text-[10px] font-semibold text-muted-foreground">
             {unit}
