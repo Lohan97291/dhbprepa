@@ -884,6 +884,8 @@ export function mTag(t){
 // PHASE INDIVIDUELLE (5 semaines) — séances adaptées au profil
 // ══════════════════════════════════════════════════
 export function getPPP_niveaux_v3_compat(weekIdx){
+  return getPPP_niveauxIndiv(weekIdx);
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PROGRAMME PHASE 2 v3 — 5 semaines — Draveil HB D2
