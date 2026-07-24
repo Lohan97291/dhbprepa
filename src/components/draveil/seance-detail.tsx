@@ -104,17 +104,19 @@ export function SeanceDetailSheet({
 
   if (playing && joueur) {
     return createPortal(
-      <SeancePlayer
-        seance={activeSeance}
-        joueur={joueur}
-        weekIdx={weekIdx}
-        sessionIdx={sessionIdx}
-        date={date ?? new Date().toISOString().split("T")[0]}
-        onExit={() => {
-          setPlaying(false);
-          onClose();
-        }}
-      />,
+      <div className="fixed inset-0 z-[200] bg-[color:var(--background)]">
+        <SeancePlayer
+          seance={activeSeance}
+          joueur={joueur}
+          weekIdx={weekIdx}
+          sessionIdx={sessionIdx}
+          date={date ?? new Date().toISOString().split("T")[0]}
+          onExit={() => {
+            setPlaying(false);
+            onClose();
+          }}
+        />
+      </div>,
       document.body
     );
   }
