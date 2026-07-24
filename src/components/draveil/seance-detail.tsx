@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Clock, MapPin, CheckCircle2, PlayCircle } from "lucide-react";
 
 import type { Joueur } from "@/lib/supabase";
@@ -102,7 +103,7 @@ export function SeanceDetailSheet({
   }
 
   if (playing && joueur) {
-    return (
+    return createPortal(
       <SeancePlayer
         seance={activeSeance}
         joueur={joueur}
@@ -113,7 +114,8 @@ export function SeanceDetailSheet({
           setPlaying(false);
           onClose();
         }}
-      />
+      />,
+      document.body
     );
   }
 
