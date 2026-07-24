@@ -242,26 +242,33 @@ function JoueurHome() {
             {validated
               .slice()
               .sort((a, b) => b.ts - a.ts)
-              .slice(0, 4)
-              .map((s, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between px-5 py-3.5 text-sm"
-                >
-                  <span className="text-foreground/90">
-                    {formatDate(s.date)}
-                  </span>
-                  {s.missed ? (
-                    <span className="text-xs font-semibold text-red-400">
-                      Manquée
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-white/[0.05] px-2.5 py-1 text-xs font-bold text-foreground">
-                      RPE {s.rpe}
-                    </span>
-                  )}
-                </div>
-              ))}
+              .slice(0, 5)
+              .map((s, i) => {
+                const typeLabel = s.sessionIdx === 0 ? '💪 Renfo' : s.sessionIdx === 1 ? '🏃 Cardio' : '🧘 Récup';
+                const typeColor = s.sessionIdx === 0 ? 'text-[color:var(--draveil-glow)]' : s.sessionIdx === 1 ? 'text-orange-400' : 'text-emerald-400';
+                const rpeColor = !s.missed && s.rpe >= 8 ? 'text-red-400' : !s.missed && s.rpe <= 4 ? 'text-blue-400' : 'text-foreground';
+                return (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                    {/* Indicateur validée/manquée */}
+                    <div className={`h-2 w-2 shrink-0 rounded-full ${s.missed ? 'bg-red-500' : 'bg-[color:var(--draveil)]'}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold ${typeColor}`}>{typeLabel}</span>
+                        <span className="text-[10px] text-muted-foreground">S{(s.weekIdx ?? 0) + 1}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{formatDate(s.date)}</div>
+                    </div>
+                    {s.missed ? (
+                      <span className="text-xs font-semibold text-red-400">Manquée</span>
+                    ) : (
+                      <div className="text-right">
+                        <div className={`text-sm font-bold ${rpeColor}`}>RPE {s.rpe}</div>
+                        {s.ressenti && <div className="text-[10px] text-muted-foreground">{s.ressenti}</div>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </GlassCard>
         </motion.div>
       )}
