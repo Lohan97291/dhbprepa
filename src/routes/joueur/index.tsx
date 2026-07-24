@@ -429,7 +429,7 @@ function StatTile({
       <div
         className={`mt-1 font-display font-black tracking-tight text-foreground ${small ? "text-sm" : "text-xl"}`}
       >
-        {typeof value === "number" ? {/*CountUp*/}<span to={value} </span> : value}
+        {typeof value === "number" ? value : value}
         {unit && (
           <span className="ml-1 text-[10px] font-semibold text-muted-foreground">
             {unit}
