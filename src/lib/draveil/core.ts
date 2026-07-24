@@ -1189,7 +1189,8 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
 
   // ── SEMAINE 1 : Réveil musculaire ─────────────────────────────────────────
   if(weekIdx === 0){
-    return _buildRenfo(weekIdx, 'S1 — Réveil musculaire + Cardio léger', '45-50 min', [
+    const matLabel = mat==='salle' ? ' 🏋️' : mat==='elast' ? ' 🟡' : ' 🏠';
+    return _buildRenfo(weekIdx, `S1 — Réveil musculaire + Cardio léger${matLabel}`, '45-50 min', [
       echauff5min(),
       {
         titre:`Circuit Réveil — ${nPassages} passages · ${label}`,
@@ -1200,7 +1201,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
             `<strong>${effortSec}s — max de reps :</strong><br>① Pieds largeur d'épaules, pointes légèrement vers l'extérieur<br>② Descente lente <strong>3s</strong>, cuisses parallèles au sol, genoux dans l'axe des pieds<br>③ Remontée en poussant dans les talons<br>④ Dos droit, regard devant toi — pas vers le bas`,
             'Genoux dans l\'axe — ne les laisse jamais rentrer vers l\'intérieur'),
           exo('Pompes','💪',
-            `<strong>${effortSec}s — max de reps :</strong><br>① Mains légèrement plus larges que les épaules<br>② Descente lente <strong>2s</strong>, poitrine proche du sol<br>③ Remontée explosive<br>④ Sur les genoux si besoin — amplitude complète obligatoire`,
+            `<strong>${effortSec}s — max de reps :</strong><br>① Mains légèrement plus larges que les épaules<br>② Descente lente <strong>2s</strong>, poitrine proche du sol<br>③ Remontée explosive<br>④ Sur les genoux si besoin — amplitude complète obligatoire${mat==='salle' ? '<br>🏋️ <em>En salle : développé couché à la place</em>' : ''}`,
             'Qualité avant quantité — 8 pompes propres valent mieux que 20 bâclées'),
           exo('Fentes alternées','🦵',
             `<strong>${effortSec}s — alterne gauche/droite :</strong><br>① Grand pas en avant, genou avant à 90°, genou arrière près du sol<br>② Descente <strong>2s</strong>, genou avant dans l'axe du pied<br>③ Remontée en poussant sur le talon avant`,
@@ -1245,7 +1246,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
             `<strong>${effortSec}s :</strong><br>① Pieds sur une chaise ou contre un mur, mains au sol<br>② Descente lente <strong>3s</strong><br>③ Remontée explosive<br>④ Variante : pompes classiques si pas de support`,
             'Corps aligné — les hanches ne s\'affaissent pas'),
           exo('Hip Thrust','🍑',
-            `<strong>${effortSec}s — max de reps :</strong><br>① Épaules posées sur un canapé ou une chaise, pieds à plat, genoux à 90°<br>② Monte les hanches en serrant fort les fessiers<br>③ Tiens <strong>2s</strong> en haut, descends lentement <strong>3s</strong>`,
+            `<strong>${effortSec}s — max de reps :</strong><br>① Épaules posées sur un canapé ou une chaise, pieds à plat, genoux à 90°<br>② Monte les hanches en serrant fort les fessiers<br>③ Tiens <strong>2s</strong> en haut, descends lentement <strong>3s</strong>${mat==='salle' ? '<br>🏋️ <em>En salle : barre sur les hanches ou haltères</em>' : mat==='elast' ? '<br>🟡 <em>Élastique : passe-le sur tes hanches et coince-le sous tes pieds</em>' : '<br>💡 <em>Leste avec un sac à dos si trop facile</em>'}`,
             'C\'est comme le pont fessier mais avec plus d\'amplitude — très efficace'),
           exo('Gainage latéral','🔷',
             `<strong>${effortSec}s par côté :</strong><br>① En appui sur l'avant-bras, coude sous l'épaule<br>② Décolle le bassin — corps aligné de la tête aux pieds<br>③ Hanche haute pendant toute la série`,
@@ -1285,7 +1286,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
             `<strong>12 reps :</strong><br>① Allongé face au sol, bras tendus devant toi<br>② Décolle simultanément les bras et les jambes<br>③ Tiens <strong>2s</strong> en haut, descends lentement <strong>3s</strong>`,
             'Dos, fessiers, ischios — tout en même temps'),
           exo('Nordic Curl','🦵',
-            `<strong>4 à 6 reps :</strong><br>① Pieds coincés sous un meuble lourd ou tenus par quelqu'un<br>② Corps droit. Laisse-toi tomber vers l'avant le plus lentement possible<br>③ Les ischios freinent la chute — 4 à 5 secondes pour descendre<br>④ Mets les mains pour te rattraper, remonte avec les bras<br>⑤ Même 3 reps propres c'est excellent`,
+            `<strong>4 à 6 reps :</strong><br>① Pieds coincés sous un meuble lourd ou tenus par quelqu'un<br>② Corps droit. Laisse-toi tomber vers l'avant le plus lentement possible<br>③ Les ischios freinent la chute — 4 à 5 secondes pour descendre<br>④ Mets les mains pour te rattraper, remonte avec les bras<br>⑤ Même 3 reps propres c'est excellent${mat==='elast' ? '<br>🟡 <em>Élastique : attache-le à un meuble et à tes chevilles pour aider la remontée</em>' : mat==='salle' ? '<br>🏋️ <em>En salle : machine à ischio ou GHD</em>' : ''}`,
             'L\'exercice anti-blessure ischios n°1 pour le handball. Difficile mais indispensable.'),
         ],
       },
