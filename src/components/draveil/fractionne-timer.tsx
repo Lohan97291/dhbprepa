@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Pause, Play, SkipForward, X } from "lucide-react";
+import { useWakeLock } from "@/hooks/use-wake-lock";
 
 interface Props {
   titre: string;
@@ -36,6 +37,9 @@ export function FractionneTimer({ titre, reps, effortSec, recupSec, vitesse, pct
   const [sec, setSec] = useState(effortSec);
   const [paused, setPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Empêcher l'écran de s'éteindre pendant le timer
+  useWakeLock(phase !== "preview" && phase !== "done");
 
   const isEffort = phase === "effort";
   const totalSec = isEffort ? effortSec : recupSec;

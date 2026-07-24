@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Calendar, Flame, PlayCircle, Sparkles } from "lucide-react";
+import { Activity, Calendar, Flame, PlayCircle, Sparkles, X } from "lucide-react";
 
 import { GlassCard } from "@/components/draveil/glass-card";
 import { DhbMark } from "@/components/draveil/logo";
@@ -24,6 +24,8 @@ import {
   formatDate,
   getSessionDatesIndiv,
   genPhase2IndivSessions,
+  getRhythmeSuggere,
+  RYTHMES_DISPO,
 } from "@/lib/draveil/core";
 
 export const Route = createFileRoute("/joueur/")({
@@ -61,9 +63,27 @@ function JoueurHome() {
     date: string;
   } | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
   const [annonce, setAnnonce] = useState<{ text: string; date: string } | null>(
     null,
   );
+  // Rythme effort/récup choisi par le joueur
+  const [rythmeChoisi, setRythmeChoisi] = useState<number | null>(null);
+  const [showRythmeModal, setShowRythmeModal] = useState(false);
+  const [pendingSeance, setPendingSeance] = useState<{ seance: any; weekIdx: number; sessionIdx: number; date: string } | null>(null);
+  // Suggestion séance suivante (stockée après RPE)
+  const [suggestionNext, setSuggestionNext] = useState<{ message: string; conseil: string; rythme: number } | null>(null);
+
+  // Changelog : version actuelle — afficher une seule fois
+  const CHANGELOG_VERSION = "v1.4";
+  const CHANGELOG_NOTES = [
+    "🔆 L'écran reste allumé pendant les timers",
+    "🤕 Signaler plusieurs zones de douleur",
+    "🏋️ Nouveau programme simplifié 45-50 min",
+    "⚡ Choix du rythme effort/récup avant chaque séance",
+    "🛡️ Exercices bouteilles Thomas dans TOUTES les séances",
+    "🖼️ Illustrations pour chaque exercice de prévention",
+  ];
 
   useEffect(() => {
     sbGetMeta<{ text: string; date: string } | null>("annonce", null).then(
@@ -82,6 +102,9 @@ function JoueurHome() {
     if (!joueur?.code || typeof window === "undefined") return;
     const key = "dhb_welcome_done_" + joueur.code;
     if (!localStorage.getItem(key)) setShowWelcome(true);
+    // Changelog : montrer si cette version n'a pas encore été vue
+    const clKey = "dhb_changelog_" + CHANGELOG_VERSION + "_" + joueur.code;
+    if (!localStorage.getItem(clKey)) setShowChangelog(true);
   }, [joueur?.code]);
 
   function closeWelcome() {
@@ -89,6 +112,13 @@ function JoueurHome() {
       localStorage.setItem("dhb_welcome_done_" + joueur.code, "1");
     }
     setShowWelcome(false);
+  }
+
+  function closeChangelog() {
+    if (joueur?.code && typeof window !== "undefined") {
+      localStorage.setItem("dhb_changelog_" + CHANGELOG_VERSION + "_" + joueur.code, "1");
+    }
+    setShowChangelog(false);
   }
 
   const today = useMemo(() => new Date(), []);
@@ -156,6 +186,27 @@ function JoueurHome() {
           <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">
             {annonce.text}
           </p>
+        </GlassCard>
+      )}
+
+      {/* Suggestion séance suivante basée sur le RPE */}
+      {suggestionNext && (
+        <GlassCard className="mb-4 border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-1">
+                💡 Pour ta prochaine séance
+              </div>
+              <p className="text-sm font-semibold text-foreground">{suggestionNext.message}</p>
+              <p className="text-xs text-muted-foreground mt-1">{suggestionNext.conseil}</p>
+            </div>
+            <button
+              onClick={() => setSuggestionNext(null)}
+              className="text-muted-foreground hover:text-foreground mt-0.5"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </GlassCard>
       )}
 
@@ -323,9 +374,11 @@ function JoueurHome() {
         <RpeSurvey
           dureeMin={rpeOverlay.dureeMin}
           onClose={(result) => {
+            if (result.suggestion) setSuggestionNext(result.suggestion);
             rpeOverlay.onValidate?.(result.rpe, result.ressenti);
             setRpeOverlay(null);
           }}
+        />
         />
       )}
 
@@ -351,6 +404,114 @@ function JoueurHome() {
 
       {showWelcome && (
         <WelcomeSlides prenom={joueur.prenom} onClose={closeWelcome} />
+      )}
+
+      {/* Modal choix du rythme effort/récup */}
+      {showRythmeModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-end bg-black/70 backdrop-blur-sm pb-safe"
+          onClick={() => { setShowRythmeModal(false); if(pendingSeance) setOpenSeance(pendingSeance); setPendingSeance(null); }}
+        >
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 26, stiffness: 260 }}
+            className="w-full max-w-md rounded-t-3xl border-t border-white/10 bg-[color:var(--background)] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
+              Avant de commencer
+            </div>
+            <h3 className="mb-1 font-display text-xl font-black tracking-tight">
+              Choisis ton rythme
+            </h3>
+            {suggestionNext && (
+              <p className="mb-4 text-xs text-muted-foreground">
+                💡 {getRhythmeSuggere(null).label} recommandé selon ta dernière séance
+              </p>
+            )}
+            <div className="space-y-3 mb-4">
+              {RYTHMES_DISPO.map((r) => {
+                const suggested = getRhythmeSuggere(joueur?.seances_validees?.slice(-1)?.[0]?.rpe ?? null);
+                const isSuggested = r.effortSec === suggested.effortSec;
+                return (
+                  <button
+                    key={r.effortSec}
+                    onClick={() => {
+                      setRythmeChoisi(r.effortSec);
+                      setShowRythmeModal(false);
+                      if (pendingSeance) setOpenSeance(pendingSeance);
+                      setPendingSeance(null);
+                    }}
+                    className={`w-full flex items-center justify-between rounded-2xl border px-4 py-4 transition ${
+                      isSuggested
+                        ? 'border-[color:var(--draveil)]/60 bg-[color:var(--draveil)]/[0.08]'
+                        : 'border-white/8 bg-white/[0.03]'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <div className="font-bold text-sm">{r.label}</div>
+                      <div className="text-xs text-muted-foreground">{r.desc}</div>
+                    </div>
+                    {isSuggested && (
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-[color:var(--draveil)] bg-[color:var(--draveil)]/10 px-2 py-1 rounded-full ml-3">
+                        Suggéré
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              Adapte en cours de séance si besoin — l'important c'est de finir.
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Changelog mise à jour */}
+      {showChangelog && !showWelcome && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-end bg-black/70 backdrop-blur-sm pb-safe"
+          onClick={closeChangelog}
+        >
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 26, stiffness: 260 }}
+            className="w-full max-w-md rounded-t-3xl border-t border-white/10 bg-[color:var(--background)] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[color:var(--draveil-glow)]">
+              Mise à jour {CHANGELOG_VERSION}
+            </div>
+            <h3 className="mb-4 font-display text-xl font-black tracking-tight">
+              Améliorations de l'appli 🛠️
+            </h3>
+            <ul className="space-y-3">
+              {CHANGELOG_NOTES.map((note, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--draveil)]" />
+                  {note}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={closeChangelog}
+              className="mt-6 w-full rounded-2xl gradient-brand py-3.5 text-sm font-bold text-white"
+            >
+              C'est parti 💪
+            </button>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

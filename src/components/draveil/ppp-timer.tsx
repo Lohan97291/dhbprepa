@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Pause, Play, SkipForward, X } from "lucide-react";
+import { useWakeLock } from "@/hooks/use-wake-lock";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PppExo {
@@ -60,6 +61,9 @@ export function PppTimer({ titre, exercices, onClose, onComplete }: Props) {
   const [sec, setSec] = useState(0);
   const [paused, setPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Empêcher l'écran de s'éteindre pendant le timer
+  useWakeLock(phase !== "preview" && phase !== "done");
 
   const exo = exercices[exoIdx];
   const totalSeries = exo ? (exo.series ?? 1) * (exo.cote ? 2 : 1) : 1;

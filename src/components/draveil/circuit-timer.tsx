@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Pause, Play, SkipForward, X, ChevronRight } from "lucide-react";
+import { useWakeLock } from "@/hooks/use-wake-lock";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface CircuitExo {
@@ -64,6 +65,9 @@ export function CircuitTimer({
   const exo = exercices[exoIdx];
   const nextExo = exercices[exoIdx + 1] ?? (passageIdx + 1 < passages ? exercices[0] : null);
   const totalExos = exercices.length;
+
+  // Empêcher l'écran de s'éteindre pendant le timer
+  useWakeLock(phase !== "preview" && phase !== "done");
 
   // ── Tick ──────────────────────────────────────────────────────────────────
   const tick = useCallback(() => {
