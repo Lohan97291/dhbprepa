@@ -94,7 +94,7 @@ function initState(steps: Step[]): PState {
   return {
     idx: 0,
     remaining: steps[0]?.kind === "timer" ? steps[0].seconds : 0,
-    paused: false,
+    paused: true,
     checked: {},
     finished: steps.length === 0,
   };
@@ -512,7 +512,7 @@ export function SeancePlayer({ seance, joueur, weekIdx, sessionIdx, date, onExit
               style={{ background: `linear-gradient(135deg, ${accent}, ${glow})` }}
             >
               {state.paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-              {state.paused ? "Reprendre" : "Pause"}
+              {state.paused ? "GO 🏁" : "⏸ Pause"}
             </button>
           ) : (
             <button
