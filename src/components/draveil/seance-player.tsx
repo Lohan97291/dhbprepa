@@ -60,6 +60,18 @@ function buildSteps(seance: SeanceLike): Step[] {
         })),
         ...base,
       });
+    } else if (b.sousBlocs?.length) {
+      // Bloc avec sous-exercices (circuit) — un step par sous-bloc
+      for (const sb of b.sousBlocs) {
+        out.push({
+          kind: "info",
+          title: sb.titre,
+          icone: sb.icone ?? b.icone,
+          detail: sb.detail,
+          note: sb.note ?? sb.erreur ? `⚠️ ${sb.erreur}` : undefined,
+          blockLabel: b.titre,
+        });
+      }
     } else if (typeof b.duree === "number" && b.duree > 0) {
       out.push({ kind: "timer", seconds: b.duree, detail: b.detail, ...base });
     } else {
