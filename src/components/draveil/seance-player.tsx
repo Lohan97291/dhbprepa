@@ -67,14 +67,52 @@ function buildSteps(seance: SeanceLike): Step[] {
       for (let p = 0; p < passages; p++) {
         for (let si = 0; si < b.sousBlocs.length; si++) {
           const sb = b.sousBlocs[si];
-          out.push({ kind: "info", title: passages > 1 ? `P${p+1}/${passages} — ${sb.titre}` : sb.titre, icone: sb.icone ?? b.icone ?? "💪", detail: sb.detail, note: sb.erreur ? `⚠️ ${sb.erreur}` : sb.note, blockLabel: b.titre });
-          out.push({ kind: "timer", seconds: effortSec, title: `${sb.titre} — GO !`, icone: "🔥", detail: `<strong>${effortSec}s à fond !</strong>`, blockLabel: b.titre });
+          const nextSb = b.sousBlocs[si + 1];
           const isLastExo = si === b.sousBlocs.length - 1;
           const isLastPassage = p === passages - 1;
+          const nextPassageSb = !isLastExo ? null : (!isLastPassage ? b.sousBlocs[0] : null);
+
+          // Étape lecture exercice
+          out.push({
+            kind: "info",
+            title: passages > 1 ? `Passage ${p+1}/${passages} — ${sb.titre}` : sb.titre,
+            icone: sb.icone ?? b.icone ?? "💪",
+            detail: sb.detail,
+            note: sb.erreur ? `⚠️ ${sb.erreur}` : sb.note,
+            blockLabel: b.titre,
+          });
+
+          // Timer effort — pas de pause après, on enchaîne direct
           if (!isLastExo) {
-            out.push({ kind: "timer", seconds: recupSec, title: "Récup", icone: "😮‍💨", detail: `<strong>${recupSec}s récup</strong> — souffle, prépare le suivant`, blockLabel: b.titre });
-          } else if (!isLastPassage) {
-            out.push({ kind: "timer", seconds: 90, title: `Pause — passage ${p+1}/${passages}`, icone: "⏸️", detail: "<strong>90s entre les passages</strong> — hydrate-toi", blockLabel: b.titre });
+            // Pas le dernier exo du passage → effort puis enchaîne direct (annonce le suivant)
+            out.push({
+              kind: "timer",
+              seconds: effortSec,
+              title: `${sb.titre}`,
+              icone: "🔥",
+              detail: `<strong>${effortSec}s à fond !</strong><br>Prochain : <strong>${nextSb.titre}</strong>`,
+              blockLabel: b.titre,
+            });
+          } else {
+            // Dernier exo du passage → effort puis récup avec annonce du prochain passage ou fin
+            out.push({
+              kind: "timer",
+              seconds: effortSec,
+              title: `${sb.titre}`,
+              icone: "🔥",
+              detail: `<strong>${effortSec}s — dernier exercice du passage !</strong>`,
+              blockLabel: b.titre,
+            });
+            if (!isLastPassage) {
+              out.push({
+                kind: "timer",
+                seconds: recupSec,
+                title: `Récup — passage ${p+1}/${passages}`,
+                icone: "😮‍💨",
+                detail: `<strong>${recupSec}s de récup</strong><br>Prochain passage : recommence par <strong>${nextPassageSb?.titre}</strong>`,
+                blockLabel: b.titre,
+              });
+            }
           }
         }
       }
