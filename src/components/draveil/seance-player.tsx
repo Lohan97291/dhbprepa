@@ -61,16 +61,22 @@ function buildSteps(seance: SeanceLike): Step[] {
         ...base,
       });
     } else if (b.sousBlocs?.length) {
-      // Bloc avec sous-exercices (circuit) — un step par sous-bloc
-      for (const sb of b.sousBlocs) {
-        out.push({
-          kind: "info",
-          title: sb.titre,
-          icone: sb.icone ?? b.icone,
-          detail: sb.detail,
-          note: sb.note ?? sb.erreur ? `⚠️ ${sb.erreur}` : undefined,
-          blockLabel: b.titre,
-        });
+      const effortSec = b.effortSec ?? 35;
+      const recupSec  = b.recupSec  ?? 25;
+      const passages  = b.passages  ?? 1;
+      for (let p = 0; p < passages; p++) {
+        for (let si = 0; si < b.sousBlocs.length; si++) {
+          const sb = b.sousBlocs[si];
+          out.push({ kind: "info", title: passages > 1 ? `P${p+1}/${passages} — ${sb.titre}` : sb.titre, icone: sb.icone ?? b.icone ?? "💪", detail: sb.detail, note: sb.erreur ? `⚠️ ${sb.erreur}` : sb.note, blockLabel: b.titre });
+          out.push({ kind: "timer", seconds: effortSec, title: `${sb.titre} — GO !`, icone: "🔥", detail: `<strong>${effortSec}s à fond !</strong>`, blockLabel: b.titre });
+          const isLastExo = si === b.sousBlocs.length - 1;
+          const isLastPassage = p === passages - 1;
+          if (!isLastExo) {
+            out.push({ kind: "timer", seconds: recupSec, title: "Récup", icone: "😮‍💨", detail: `<strong>${recupSec}s récup</strong> — souffle, prépare le suivant`, blockLabel: b.titre });
+          } else if (!isLastPassage) {
+            out.push({ kind: "timer", seconds: 90, title: `Pause — passage ${p+1}/${passages}`, icone: "⏸️", detail: "<strong>90s entre les passages</strong> — hydrate-toi", blockLabel: b.titre });
+          }
+        }
       }
     } else if (typeof b.duree === "number" && b.duree > 0) {
       out.push({ kind: "timer", seconds: b.duree, detail: b.detail, ...base });
