@@ -25,6 +25,7 @@ type Step =
       note?: string;
       seconds: number;
       blockLabel?: string;
+      waitGo?: boolean;  // true = timer démarre en pause, joueur appuie GO
     }
   | {
       kind: "info";
@@ -84,7 +85,7 @@ function buildSteps(seance: SeanceLike): Step[] {
 
           // Timer effort — pas de pause après, on enchaîne direct
           if (!isLastExo) {
-            // Pas le dernier exo du passage → effort puis enchaîne direct (annonce le suivant)
+            // Effort — part automatiquement, annonce le suivant
             out.push({
               kind: "timer",
               seconds: effortSec,
@@ -94,23 +95,24 @@ function buildSteps(seance: SeanceLike): Step[] {
               blockLabel: b.titre,
             });
           } else {
-            // Dernier exo du passage → effort puis récup avec annonce du prochain passage ou fin
+            // Dernier exo du passage → effort puis récup AVEC GO
             out.push({
               kind: "timer",
               seconds: effortSec,
               title: `${sb.titre}`,
               icone: "🔥",
-              detail: `<strong>${effortSec}s — dernier exercice du passage !</strong>`,
+              detail: `<strong>${effortSec}s — dernier exercice !</strong>`,
               blockLabel: b.titre,
             });
             if (!isLastPassage) {
               out.push({
                 kind: "timer",
                 seconds: recupSec,
-                title: `Récup — passage ${p+1}/${passages}`,
+                title: `Récup — passage ${p+1}/${passages} terminé`,
                 icone: "😮‍💨",
-                detail: `<strong>${recupSec}s de récup</strong><br>Prochain passage : recommence par <strong>${nextPassageSb?.titre}</strong>`,
+                detail: `<strong>${recupSec}s de récup</strong> — Prochain passage : <strong>${nextPassageSb?.titre}</strong><br>Appuie GO quand tu es prêt`,
                 blockLabel: b.titre,
+                waitGo: true,
               });
             }
           }
@@ -147,10 +149,13 @@ type PAction =
   | { type: "finish" };
 
 function initState(steps: Step[]): PState {
+  const first = steps[0];
+  // Premier step : pause si waitGo=true ou si c'est le 1er bloc (toujours pause au départ)
+  const startPaused = !first || (first.kind === "timer");
   return {
     idx: 0,
-    remaining: steps[0]?.kind === "timer" ? steps[0].seconds : 0,
-    paused: true,
+    remaining: first?.kind === "timer" ? first.seconds : 0,
+    paused: startPaused,
     checked: {},
     finished: steps.length === 0,
   };
@@ -167,10 +172,13 @@ function reducer(state: PState, action: PAction): PState {
       const next = state.idx + 1;
       if (next >= action.steps.length) return { ...state, finished: true };
       const step = action.steps[next];
+      // waitGo=true → pause (récup entre passages, début séance)
+      // sinon → auto (effort circuit, cardio, PPP...)
+      const shouldPause = step.kind === "timer" && !!(step as any).waitGo;
       return {
         ...state,
         idx: next,
-        paused: false,
+        paused: shouldPause,
         remaining: step.kind === "timer" ? step.seconds : 0,
       };
     }
@@ -259,6 +267,15 @@ export function SeancePlayer({ seance, joueur, weekIdx, sessionIdx, date, onExit
     const id = window.setInterval(() => dispatch({ type: "tick" }), 1000);
     return () => window.clearInterval(id);
   }, [step, state.paused, state.remaining, state.finished]);
+
+  /* Auto-advance sur les steps "info" après 4s -------------------- */
+  useEffect(() => {
+    if (!step || step.kind !== "info") return;
+    const id = window.setTimeout(() => {
+      dispatch({ type: "next", steps });
+    }, 4000);
+    return () => window.clearTimeout(id);
+  }, [state.idx]);
 
   /* Countdown beeps + auto-advance --------------------------------- */
   const prevRemaining = useRef(state.remaining);
