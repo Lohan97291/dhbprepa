@@ -18,7 +18,13 @@ interface Bloc {
   icone?: string;
   duree?: number;
   isPPP?: boolean;
-  pppExos?: Array<{ nom: string; detail?: string }>;
+  pppExos?: Array<{ nom: string; detail?: string; exec?: string[]; erreur?: string; note?: string; illustration?: string }>;
+  sousBlocs?: Array<{ titre: string; icone?: string; detail?: string; note?: string; erreur?: string }>;
+  effortSec?: number;
+  recupSec?: number;
+  recupPassageSec?: number;
+  passages?: number;
+  tags?: string[];
 }
 
 // Structural shape of a generated session (matches core.ts return values).
@@ -36,6 +42,7 @@ export interface SeanceLike {
   blocs?: Bloc[];
   phase?: string;
   semaine?: number;
+  tags?: string[] | Array<{ label: string; color?: string }>;
 }
 
 type Ressenti = "fatigue" | "normal" | "enforme";
