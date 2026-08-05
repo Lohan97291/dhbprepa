@@ -916,7 +916,7 @@ function allure(vma, pct){ return kmhToMinKm(vit(vma,pct)); }
 // RPE 4-6 (gérable)     → suggère 35/25
 // RPE 7-10 (dur/épuisant) → suggère 30/30
 export function getRhythmeSuggere(dernierRpe){
-  if(!dernierRpe) return { effortSec:35, recupSec:25, label:'35s/25s', raison:'Rythme standard' };
+  if(!dernierRpe) return { effortSec:30, recupSec:30, label:'30s/30s', raison:'Rythme de départ — tu ajustes selon tes sensations' };
   if(dernierRpe <= 3) return { effortSec:40, recupSec:20, label:'40s/20s', raison:'Tu t\'es senti à l\'aise — on monte d\'un cran 💪' };
   if(dernierRpe <= 6) return { effortSec:35, recupSec:25, label:'35s/25s', raison:'Bonne intensité la dernière fois — on garde le même rythme' };
   return { effortSec:30, recupSec:30, label:'30s/30s', raison:'La dernière séance était difficile — prends plus de récup, c\'est pas de la faiblesse' };
@@ -1236,14 +1236,12 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
         detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 90s entre passages</strong><br>On monte d'un cran — reste explosif sur chaque exercice.`,
         effortSec, recupSec, recupPassageSec:90, passages:nPassages,
         sousBlocs:[
-          exo('Squat sauté','🦵',
-            `<strong>${effortSec}s — explosivité :</strong><br>① Squat profond descente <strong>3s</strong><br>② Remontée explosive avec saut<br>③ Réception souple genoux fléchis — jamais les genoux verrouillés<br>④ Enchaîne immédiatement`,
-            'Réception souple — genoux dans l\'axe',
-            'Sans saut : squat lent 4s descente, remontée rapide'),
-          exo('Fente sautée','🦵',
-            `<strong>${effortSec}s — alternance en saut :</strong><br>① Fente basse<br>② Saut pour changer de jambe en l'air<br>③ Réception souple en fente de l'autre côté`,
-            'Si les genoux tirent : fentes alternées sans saut',
-            'Sans saut : fentes alternées normales'),
+          exo('Squat lent explosif','🦵',
+            `<strong>${effortSec}s — max de reps :</strong><br>① Descente lente <strong>4s</strong>, cuisses parallèles au sol<br>② Tiens <strong>1s</strong> en bas<br>③ Remontée rapide en poussant dans les talons<br>④ Genoux dans l'axe, dos droit`,
+            'La descente lente c\'est ce qui construit le muscle — pas la vitesse'),
+          exo('Fente arrière lente','🦵',
+            `<strong>${effortSec}s — alterne gauche/droite :</strong><br>① Recule un pied, genou arrière près du sol<br>② Descente <strong>3s</strong>, genou avant à 90° dans l'axe du pied<br>③ Remontée en poussant sur le talon avant<br>④ Pas de saut — contrôle total`,
+            'Genou avant dans l\'axe — évite toute douleur côté genou'),
           exo('Pompes déclinées','💪',
             `<strong>${effortSec}s :</strong><br>① Pieds sur une chaise ou contre un mur, mains au sol<br>② Descente lente <strong>3s</strong><br>③ Remontée explosive<br>④ Variante : pompes classiques si pas de support`,
             'Corps aligné — les hanches ne s\'affaissent pas'),
@@ -1314,12 +1312,12 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
         detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 2 min entre passages</strong><br>La séance la plus dure du cycle — donne tout.`,
         effortSec, recupSec, recupPassageSec:120, passages:nPassages,
         sousBlocs:[
-          exo('Squat sauté enchaîné','⚡',
-            `<strong>${effortSec}s — sauts continus :</strong><br>① Squat profond + saut le plus haut possible<br>② Réception souple · Enchaîne sans pause`,
-            'Le plus de répétitions possible — qualité des atterrissages obligatoire'),
-          exo('Fente sautée max','⚡',
-            `<strong>${effortSec}s — rythme maximum :</strong><br>① Saut en changeant de jambe à chaque répétition<br>② Reste bas, rythme le plus rapide possible`,
-            'Finisseur — vide les réservoirs'),
+          exo('Squat rapide enchaîné','⚡',
+            `<strong>${effortSec}s — rythme maximum :</strong><br>① Squat profond descente <strong>2s</strong><br>② Remontée explosive — le plus vite possible<br>③ Enchaîne sans pause · Variante : ajoute un saut si les genoux le permettent`,
+            'Volume maximum — qualité des genoux en priorité'),
+          exo('Fente arrière rapide','⚡',
+            `<strong>${effortSec}s — rythme soutenu :</strong><br>① Recule un pied en fente basse, genou arrière près du sol<br>② Remontée explosive, alterne les jambes vite<br>③ Pas de saut — amplitude complète à chaque rep`,
+            'Plus vite que S2 mais toujours contrôlé — pas d\'impact'),
           exo('Pompes explosives','💪',
             `<strong>${effortSec}s :</strong><br>① Remontée explosive, essaie de décoller les mains<br>② Claque des mains si tu y arrives · Corps gainé à chaque rep`,
             'Explosivité pectoraux et épaules'),
@@ -1329,9 +1327,9 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
           exo('Nordic Curl — série complète','🦵',
             `<strong>5 à 8 reps :</strong><br>① Pieds coincés sous un meuble, corps droit<br>② Chute la plus lente possible — vise 5 secondes de descente<br>③ Mains pour se rattraper, remonte avec les bras<br>④ 2 min de récup entre passages${mat==='salle' ? '<br>🏋️ <em>En salle : machine à ischio ou GHD — 6 à 10 reps contrôlées, même principe de descente lente</em>' : mat==='elast' ? '<br>🟡 <em>Élastique : attache-le à un point fixe derrière toi et à tes chevilles pour aider la remontée — tu peux faire plus de reps</em>' : ''}`,
             'Volume maximum du cycle sur les ischios — séance la plus importante pour la prévention ischios'),
-          exo('Burpees','🔥',
-            `<strong>${effortSec}s — finisseur absolu :</strong><br>① Debout → accroupi → planche → retour → saut bras levés<br>② Rythme le plus rapide en gardant la qualité`,
-            'Dernier exercice du pic — vide complètement les réservoirs'),
+          exo('Mountain climbers','🔥',
+            `<strong>${effortSec}s — finisseur cardio :</strong><br>① En position de planche, bras tendus<br>② Ramène les genoux vers la poitrine en alternance le plus vite possible<br>③ Hanches basses — corps gainé pendant tout l'exercice`,
+            'Cardio intense sans impact sur les genoux — finisseur parfait'),
         ],
       },
       {
@@ -1354,15 +1352,15 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
       detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 90s entre passages</strong><br>Volume réduit, intensité haute — on reste explosif et frais pour le collectif.`,
       effortSec, recupSec, recupPassageSec:90, passages:nPassages,
       sousBlocs:[
-        exo('Squat sauté explosif','⚡',
-          `<strong>${effortSec}s — saut maximum :</strong><br>① Squat + saut le plus haut · Réception souple`,
-          'Qualité des sauts — pas de volume'),
+        exo('Squat explosif','⚡',
+          `<strong>${effortSec}s — explosivité :</strong><br>① Squat profond descente <strong>2s</strong><br>② Remontée la plus explosive possible — saut si les genoux le permettent, sinon remontée rapide sans saut<br>③ Enchaîne immédiatement`,
+          'L\'explosivité vient de la remontée — pas obligé de sauter pour progresser'),
         exo('Pompes explosives','💪',
           `<strong>${effortSec}s :</strong><br>① Remontée explosive, décoller les mains si possible`,
           'Explosivité pectoraux'),
-        exo('Fente sautée','🦵',
-          `<strong>${effortSec}s :</strong><br>① Échange de jambe en l'air à chaque rep`,
-          'Réception souple'),
+        exo('Fente arrière explosive','🦵',
+          `<strong>${effortSec}s :</strong><br>① Recule en fente basse, genou arrière près du sol<br>② Remontée explosive en poussant sur le talon avant · Alterne rapidement les jambes`,
+          'Même travail que la fente sautée — sans l\'impact des sauts'),
         exo('Gainage ventral','🔷',
           `<strong>${effortSec}s :</strong><br>① Corps aligné, abdos serrés, respire`,
           'Qualité obligatoire'),
