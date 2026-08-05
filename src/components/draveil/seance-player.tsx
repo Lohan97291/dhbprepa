@@ -62,9 +62,10 @@ function buildSteps(seance: SeanceLike): Step[] {
         ...base,
       });
     } else if (b.sousBlocs?.length) {
-      const effortSec = b.effortSec ?? 35;
-      const recupSec  = b.recupSec  ?? 25;
-      const passages  = b.passages  ?? 1;
+      const effortSec       = b.effortSec       ?? 35;
+      const recupSec        = b.recupSec        ?? 25;
+      const recupPassageSec = b.recupPassageSec ?? 90;
+      const passages        = b.passages        ?? 1;
       for (let p = 0; p < passages; p++) {
         for (let si = 0; si < b.sousBlocs.length; si++) {
           const sb = b.sousBlocs[si];
@@ -95,22 +96,23 @@ function buildSteps(seance: SeanceLike): Step[] {
               blockLabel: b.titre,
             });
           } else {
-            // Dernier exo du passage → effort puis récup AVEC GO
+            // Dernier exo du passage → effort puis récup inter-passage
             out.push({
               kind: "timer",
               seconds: effortSec,
               title: `${sb.titre}`,
               icone: "🔥",
-              detail: `<strong>${effortSec}s — dernier exercice !</strong>`,
+              detail: `<strong>${effortSec}s — dernier exercice du passage !</strong>`,
               blockLabel: b.titre,
             });
             if (!isLastPassage) {
+              const recupMin = recupPassageSec >= 60 ? `${recupPassageSec / 60} min` : `${recupPassageSec}s`;
               out.push({
                 kind: "timer",
-                seconds: recupSec,
-                title: `Récup — passage ${p+1}/${passages} terminé`,
+                seconds: recupPassageSec,
+                title: `Récupération — ${recupMin}`,
                 icone: "😮‍💨",
-                detail: `<strong>${recupSec}s de récup</strong> — Prochain passage : <strong>${nextPassageSb?.titre}</strong><br>Appuie GO quand tu es prêt`,
+                detail: `<strong>${recupMin} de récupération</strong><br>Passage ${p+1}/${passages} terminé 💪<br>Prochain : <strong>${nextPassageSb?.titre}</strong><br><br>⏸ Appuie <strong>GO</strong> quand tu es prêt à repartir`,
                 blockLabel: b.titre,
                 waitGo: true,
               });
@@ -312,7 +314,8 @@ export function SeancePlayer({ seance, joueur, weekIdx, sessionIdx, date, onExit
     if (saving) return;
     setSaving(true);
     const list = joueur.seances_validees ?? [];
-    const typeSeance = seance.tags?.includes('cardio') ? 'cardio' : seance.tags?.includes('recup') ? 'recup' : 'renfo';
+    const tagsStr = (seance.tags ?? []) as string[];
+    const typeSeance = tagsStr.includes('cardio') ? 'cardio' : tagsStr.includes('recup') ? 'recup' : 'renfo';
     const sugg = getSuggestionSuivante(rpeFinal, typeSeance);
     setSuggestion(sugg);
     const next: Joueur = {
@@ -581,11 +584,16 @@ export function SeancePlayer({ seance, joueur, weekIdx, sessionIdx, date, onExit
                 haptic(12);
                 dispatch({ type: "toggle-pause" });
               }}
-              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl gradient-brand text-base font-bold text-white shadow-brand"
-              style={{ background: `linear-gradient(135deg, ${accent}, ${glow})` }}
+              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl text-base font-bold text-white shadow-brand"
+              style={{
+                background: state.paused
+                  ? `linear-gradient(135deg, #16a34a, #22c55e)`
+                  : `linear-gradient(135deg, ${accent}, ${glow})`,
+                boxShadow: state.paused ? "0 0 20px #16a34a66" : undefined,
+              }}
             >
               {state.paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-              {state.paused ? "GO 🏁" : "⏸ Pause"}
+              {state.paused ? "GO — Passage suivant 🏁" : "⏸ Pause"}
             </button>
           ) : (
             <button
