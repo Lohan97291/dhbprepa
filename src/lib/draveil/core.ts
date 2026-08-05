@@ -1196,7 +1196,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
         titre:`Circuit Réveil — ${nPassages} passages · ${label}`,
         icone:'💪',
         detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 90s entre passages</strong><br>Enchaîne les exercices sans pause entre eux. Récupère 90s à la fin de chaque passage.`,
-        effortSec, recupSec, passages:nPassages,
+        effortSec, recupSec, recupPassageSec:90, passages:nPassages,
         sousBlocs:[
           exo('Squat poids du corps','🦵',
             `<strong>${effortSec}s — max de reps :</strong><br>① Pieds largeur d'épaules, pointes légèrement vers l'extérieur<br>② Descente lente <strong>3s</strong>, cuisses parallèles au sol, genoux dans l'axe des pieds<br>③ Remontée en poussant dans les talons<br>④ Dos droit, regard devant toi — pas vers le bas`,
@@ -1234,7 +1234,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
         titre:`Circuit Intensité — ${nPassages} passages · ${label}`,
         icone:'⚡',
         detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 90s entre passages</strong><br>On monte d'un cran — reste explosif sur chaque exercice.`,
-        effortSec, recupSec, passages:nPassages,
+        effortSec, recupSec, recupPassageSec:90, passages:nPassages,
         sousBlocs:[
           exo('Squat sauté','🦵',
             `<strong>${effortSec}s — explosivité :</strong><br>① Squat profond descente <strong>3s</strong><br>② Remontée explosive avec saut<br>③ Réception souple genoux fléchis — jamais les genoux verrouillés<br>④ Enchaîne immédiatement`,
@@ -1274,7 +1274,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
         titre:`Circuit Force — ${nPassages} passages · ${label}`,
         icone:'💪',
         detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 2 min entre passages</strong><br>Descentes lentes, remontées explosives — le renfo commence vraiment ici.`,
-        effortSec, recupSec, passages:nPassages,
+        effortSec, recupSec, recupPassageSec:120, passages:nPassages,
         sousBlocs:[
           exo('Squat lent (4s descente)','🦵',
             `<strong>${effortSec}s :</strong><br>① Descente très lente en 4 secondes, cuisses parallèles<br>② Tiens <strong>1s</strong> en bas<br>③ Remontée explosive en poussant dans les talons<br>④ Genoux dans l'axe, dos droit`,
@@ -1312,7 +1312,7 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
         titre:`Circuit Peak — ${nPassages} passages · ${label}`,
         icone:'🔥',
         detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 2 min entre passages</strong><br>La séance la plus dure du cycle — donne tout.`,
-        effortSec, recupSec, passages:nPassages,
+        effortSec, recupSec, recupPassageSec:120, passages:nPassages,
         sousBlocs:[
           exo('Squat sauté enchaîné','⚡',
             `<strong>${effortSec}s — sauts continus :</strong><br>① Squat profond + saut le plus haut possible<br>② Réception souple · Enchaîne sans pause`,
@@ -1351,7 +1351,8 @@ export function genSeanceRenfo(weekIdx, joueur, effortSec=35, recupSec=25){
     {
       titre:`Circuit Affûtage — ${nPassages} passages · ${label}`,
       icone:'⚡',
-      detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup</strong><br>Volume réduit, intensité haute — on reste explosif et frais pour le collectif.`,
+      detail:`<strong>${nPassages} passages · ${effortSec}s à fond · ${recupSec}s récup · 90s entre passages</strong><br>Volume réduit, intensité haute — on reste explosif et frais pour le collectif.`,
+      effortSec, recupSec, recupPassageSec:90, passages:nPassages,
       sousBlocs:[
         exo('Squat sauté explosif','⚡',
           `<strong>${effortSec}s — saut maximum :</strong><br>① Squat + saut le plus haut · Réception souple`,
@@ -1397,7 +1398,7 @@ export function genSeanceCardio(weekIdx, joueur, effortSec=35, recupSec=25){
     titre:'Renfo léger — 2 passages',
     icone:'💪',
     detail:`<strong>2 passages · ${effortSec}s effort · ${recupSec}s récup · 1 min entre passages</strong><br>3 exercices seulement — on finit proprement sans s'épuiser.`,
-    effortSec, recupSec, passages:2,
+    effortSec, recupSec, recupPassageSec:60, passages:2,
     sousBlocs:[
       exo('Gainage ventral','🔷',
         `<strong>${effortSec}s :</strong><br>① Corps aligné, abdos serrés, respire normalement`,
